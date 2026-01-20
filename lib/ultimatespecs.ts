@@ -1,4 +1,4 @@
-import "server-only";
+Import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -44,7 +44,8 @@ type RawRecord = {
   local_image?: string | null;
 };
 
-const DATA_PATH = path.join(process.cwd(), "..", "ultimatespecs_complete_db.jsonl");
+// CORRECCIÓN: Apuntamos a la carpeta public donde moviste el archivo
+const DATA_PATH = path.join(process.cwd(), "public", "ultimatespecs_complete_db.jsonl");
 const IMAGE_ROOT_TOKEN = "ultimatespecs_images";
 
 let cachedIndex: UltimateSpecsBrand[] | null = null;
@@ -161,17 +162,27 @@ function normalizeLocalImagePath(value?: string | null) {
 }
 
 function loadRecords(): RawRecord[] {
-  const raw = fs.readFileSync(DATA_PATH, "utf-8");
-  const lines = raw.split(/\r?\n/).filter(Boolean);
-  const records: RawRecord[] = [];
-  for (const line of lines) {
-    try {
-      records.push(JSON.parse(line) as RawRecord);
-    } catch {
-      continue;
+  try {
+    // CORRECCIÓN: Try/Catch para que si falla la lectura, el build NO se rompa
+    if (!fs.existsSync(DATA_PATH)) {
+      console.warn(`[UltimateSpecs] DB file not found at: ${DATA_PATH}`);
+      return [];
     }
+    const raw = fs.readFileSync(DATA_PATH, "utf-8");
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const records: RawRecord[] = [];
+    for (const line of lines) {
+      try {
+        records.push(JSON.parse(line) as RawRecord);
+      } catch {
+        continue;
+      }
+    }
+    return records;
+  } catch (error) {
+    console.error("[UltimateSpecs] Error loading DB:", error);
+    return [];
   }
-  return records;
 }
 
 function buildIndex() {
