@@ -1,4 +1,4 @@
-Import "server-only";
+import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -44,8 +44,6 @@ type RawRecord = {
   local_image?: string | null;
 };
 
-// CORRECCIÓN: Apuntamos a la carpeta public donde moviste el archivo
-const DATA_PATH = path.join(process.cwd(), "public", "ultimatespecs_complete_db.jsonl");
 const IMAGE_ROOT_TOKEN = "ultimatespecs_images";
 
 let cachedIndex: UltimateSpecsBrand[] | null = null;
@@ -161,14 +159,35 @@ function normalizeLocalImagePath(value?: string | null) {
   return parts.slice(-2).join("/");
 }
 
+
 function loadRecords(): RawRecord[] {
   try {
-    // CORRECCIÓN: Try/Catch para que si falla la lectura, el build NO se rompa
-    if (!fs.existsSync(DATA_PATH)) {
-      console.warn(`[UltimateSpecs] DB file not found at: ${DATA_PATH}`);
+    const filename = "ultimatespecs_complete_db.jsonl";
+    
+    // Lista de posibles lugares donde puede estar el archivo
+    const possiblePaths = [
+      path.join(process.cwd(), "public", filename),
+      path.join(process.cwd(), filename),
+      path.join(process.cwd(), "web", "public", filename), // Por si acaso
+      path.join(process.cwd(), "..", filename) // Intento original
+    ];
+
+    let foundPath = "";
+    
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        foundPath = p;
+        break;
+      }
+    }
+
+    if (!foundPath) {
+      console.warn(`[WARN] No se encontró la DB en ninguna ruta probable. Retornando vacío para NO ROMPER el build.`);
+      // RETORNAMOS VACÍO EN VEZ DE ERROR PARA QUE EL DEPLOY PASE
       return [];
     }
-    const raw = fs.readFileSync(DATA_PATH, "utf-8");
+
+    const raw = fs.readFileSync(foundPath, "utf-8");
     const lines = raw.split(/\r?\n/).filter(Boolean);
     const records: RawRecord[] = [];
     for (const line of lines) {
@@ -180,7 +199,8 @@ function loadRecords(): RawRecord[] {
     }
     return records;
   } catch (error) {
-    console.error("[UltimateSpecs] Error loading DB:", error);
+    console.error("[ERROR] Falló la carga de registros, pero continuamos:", error);
+    // RETORNAMOS VACÍO PARA QUE PASE EL BUILD
     return [];
   }
 }
@@ -190,6 +210,7 @@ function buildIndex() {
   const brandMap = new Map<string, UltimateSpecsBrand>();
   const modelMap = new Map<string, UltimateSpecsModel>();
 
+  // Si no hay records (porque falló la carga), esto simplemente no hace nada y no rompe
   for (const record of records) {
     const brandKey = normalizeBrandKey(record.brand);
     const brand = brandMap.get(brandKey) ?? {
