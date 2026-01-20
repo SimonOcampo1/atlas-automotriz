@@ -159,7 +159,6 @@ function normalizeLocalImagePath(value?: string | null) {
   return parts.slice(-2).join("/");
 }
 
-
 function loadRecords(): RawRecord[] {
   try {
     const filename = "ultimatespecs_complete_db.jsonl";
@@ -168,8 +167,8 @@ function loadRecords(): RawRecord[] {
     const possiblePaths = [
       path.join(process.cwd(), "public", filename),
       path.join(process.cwd(), filename),
-      path.join(process.cwd(), "web", "public", filename), // Por si acaso
-      path.join(process.cwd(), "..", filename) // Intento original
+      path.join(process.cwd(), "web", "public", filename),
+      path.join(process.cwd(), "..", filename)
     ];
 
     let foundPath = "";
@@ -183,7 +182,6 @@ function loadRecords(): RawRecord[] {
 
     if (!foundPath) {
       console.warn(`[WARN] No se encontró la DB en ninguna ruta probable. Retornando vacío para NO ROMPER el build.`);
-      // RETORNAMOS VACÍO EN VEZ DE ERROR PARA QUE EL DEPLOY PASE
       return [];
     }
 
@@ -200,7 +198,6 @@ function loadRecords(): RawRecord[] {
     return records;
   } catch (error) {
     console.error("[ERROR] Falló la carga de registros, pero continuamos:", error);
-    // RETORNAMOS VACÍO PARA QUE PASE EL BUILD
     return [];
   }
 }
@@ -210,7 +207,6 @@ function buildIndex() {
   const brandMap = new Map<string, UltimateSpecsBrand>();
   const modelMap = new Map<string, UltimateSpecsModel>();
 
-  // Si no hay records (porque falló la carga), esto simplemente no hace nada y no rompe
   for (const record of records) {
     const brandKey = normalizeBrandKey(record.brand);
     const brand = brandMap.get(brandKey) ?? {
@@ -363,12 +359,23 @@ export function getBrandsWithModels() {
   return getUltimateSpecsBrands().filter((brand) => brand.models.length > 0);
 }
 
+// =====================================================================
+// CORRECCIÓN: Apuntamos directo a la carpeta 'public/ultimatespecs'
+// =====================================================================
 export function getUltimateSpecsImageSrc(image: UltimateSpecsImage | null) {
   if (!image) {
     return null;
   }
   if (image.local) {
-    return `/api/ultimatespecs/${encodeURI(image.local)}`;
+    // Aquí cambiamos la lógica:
+    // En lugar de llamar a /api/ultimatespecs/..., apuntamos a la ruta estática.
+    // image.local viene limpio de prefijos raros, ej: "BMW/modelo/foto.jpg"
+    
+    // Nos aseguramos de que no tenga barra inicial duplicada
+    const cleanPath = image.local.startsWith('/') ? image.local.slice(1) : image.local;
+    
+    // Retornamos la ruta hacia la carpeta public/ultimatespecs
+    return `/ultimatespecs/${encodeURI(cleanPath)}`;
   }
   if (image.url) {
     return image.url;
