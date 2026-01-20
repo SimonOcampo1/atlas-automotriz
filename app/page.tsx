@@ -6,7 +6,16 @@ import { getBrandKeyForName, getBrandsWithModels } from "@/lib/ultimatespecs";
 
 export default function Home() {
   const logos = getAllLogos();
-  const brandsWithModels = getBrandsWithModels();
+  
+  // CORRECCIÓN DE EMERGENCIA: Try/Catch para evitar que el build explote
+  let brandsWithModels: any[] = [];
+  try {
+    brandsWithModels = getBrandsWithModels();
+  } catch (error) {
+    console.error("Error cargando marcas (ignorando para build):", error);
+    brandsWithModels = [];
+  }
+
   const brandKeys = new Set(brandsWithModels.map((brand) => brand.key));
   const brandModelLinks = Object.fromEntries(
     logos
