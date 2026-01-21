@@ -36,14 +36,14 @@ type SortOption = "name-asc" | "name-desc";
 type DensityOption = 2 | 3 | 4 | 5 | 6;
 type VisualSizeOption = "small" | "medium" | "large";
 type GroupMode = "letters" | "countries";
-
 type Props = {
   logos: Logo[];
   brandModelLinks?: Record<string, string>;
 };
 
+// CORRECCIÓN: Devolvemos la ruta directa (ya viene correcta desde lib/logos.ts)
 function getImageSrc(logo: Logo, size: LogoSize) {
-  return `/api/logo/${logo.images[size]}`;
+  return logo.images[size];
 }
 
 function getSizeClasses(scale: number) {
@@ -234,7 +234,6 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
         logos,
       };
     });
-
     items.sort((a, b) => a.title.localeCompare(b.title));
     if (sort === "name-desc") {
       items.reverse();
@@ -360,8 +359,9 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                 </span>
                 <span className="flex items-center gap-2">
                   {countryFilterFlag ? (
+                    // CORRECCIÓN: Bandera con ruta directa
                     <img
-                      src={`/api/flags/${countryFilterFlag}?size=32`}
+                      src={`/flags/SVG/${countryFilterFlag}.svg`}
                       alt=""
                       className="h-4 w-6 rounded-sm object-cover"
                       loading="lazy"
@@ -393,8 +393,9 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                   {countryOptions.map((country) => (
                     <SelectItem key={country.code} value={country.code}>
                       <span className="flex items-center gap-2">
+                        {/* CORRECCIÓN: Bandera con ruta directa */}
                         <img
-                          src={`/api/flags/${country.code}?size=32`}
+                          src={`/flags/SVG/${country.code}.svg`}
                           alt=""
                           className="h-4 w-6 rounded-sm object-cover"
                           loading="lazy"
@@ -417,8 +418,9 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
             <div key={group.key} className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 {group.country && group.country.code !== UNKNOWN_COUNTRY.code ? (
+                  // CORRECCIÓN: Bandera con ruta directa
                   <img
-                    src={`/api/flags/${group.country.code}`}
+                    src={`/flags/SVG/${group.country.code}.svg`}
                     alt=""
                     className="h-5 w-5 rounded-sm"
                   />
