@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -30,6 +31,7 @@ type Props = {
   logos: Logo[];
 };
 
+// CORRECCIÓN: Ruta directa
 function getImageSrc(logo: Logo, size: LogoSize) {
   return logo.images[size];
 }
@@ -310,12 +312,12 @@ export function TierGallery({ logos }: Props) {
           </DialogHeader>
           {selected && (
             <div className="flex flex-col items-center gap-4">
-              {/* CORRECCIÓN: Fondo transparente y sin padding */}
-              <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent">
+              {/* RESTAURADO: Fondo blanco y padding para LOGOS */}
+              <div className="flex w-full items-center justify-center rounded-2xl bg-white p-6">
                 <img
                   src={getImageSrc(selected, "original")}
                   alt={`Logo de ${selected.name}`}
-                  className="max-h-[70vh] w-full object-contain"
+                  className="max-h-[70vh] w-auto object-contain"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
