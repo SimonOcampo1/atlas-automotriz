@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -26,13 +27,13 @@ type SortOption = "name-asc" | "name-desc";
 type DensityOption = 2 | 3 | 4 | 5 | 6;
 type VisualSizeOption = "small" | "medium" | "large";
 type GroupMode = "letters" | "countries";
-
 type Props = {
   logos: Logo[];
 };
 
+// CORRECCIÓN: Ruta directa, sin /api/logo
 function getImageSrc(logo: Logo, size: LogoSize) {
-  return `/api/logo/${logo.images[size]}`;
+  return logo.images[size];
 }
 
 function getSizeClasses(scale: number) {
@@ -154,7 +155,6 @@ export function TierGallery({ logos }: Props) {
         logos,
       };
     });
-
     items.sort((a, b) => a.title.localeCompare(b.title));
     if (sort === "name-desc") {
       items.reverse();
@@ -253,8 +253,9 @@ export function TierGallery({ logos }: Props) {
             <div key={group.key} className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 {group.country && group.country.code !== UNKNOWN_COUNTRY.code ? (
+                  // CORRECCIÓN: Ruta de bandera directa
                   <img
-                    src={`/api/flags/${group.country.code}`}
+                    src={`/flags/SVG/${group.country.code}.svg`}
                     alt=""
                     className="h-5 w-5 rounded-sm"
                   />
