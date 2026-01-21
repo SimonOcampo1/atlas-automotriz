@@ -49,7 +49,7 @@ export function SpecCardGrid({ items, emptyLabel }: Props) {
               <button
                 type="button"
                 onClick={() => item.imageSrc && setSelected(item)}
-                className="flex h-52 w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent p-0 transition"
+                className="flex h-52 w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent p-0 transition hover:opacity-90"
               >
                 {item.imageSrc ? (
                   <img
@@ -91,11 +91,12 @@ export function SpecCardGrid({ items, emptyLabel }: Props) {
           </DialogHeader>
           {selected?.imageSrc ? (
             <div className="flex flex-col items-center gap-4">
-              <div className="flex w-full items-center justify-center rounded-2xl bg-white p-6">
+              {/* CORRECCIÓN: Sin bordes blancos (p-0) y fondo transparente */}
+              <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent p-0">
                 <img
                   src={selected.imageSrc}
                   alt={selected.title}
-                  className="max-h-[70vh] w-auto object-contain"
+                  className="max-h-[70vh] w-full object-contain"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
