@@ -32,6 +32,7 @@ type LocalLogo = {
   fileName: string;
 };
 
+// Rutas del sistema de archivos (para leer el JSON)
 const DATASET_ROOT = path.join(
   process.cwd(),
   "public",
@@ -102,28 +103,56 @@ function isExcludedLogo(logo: { slug: string; name: string }) {
   return false;
 }
 
+// CORRECCIÓN: Try/Catch para evitar errores de Build si falta el archivo
 function readJson<T>(filePath: string): T {
-  const raw = fs.readFileSync(filePath, "utf-8");
-  return JSON.parse(raw) as T;
+  try {
+    // Intentamos buscar el archivo en varias rutas por si Vercel lo movió
+    let targetPath = filePath;
+    if (!fs.existsSync(targetPath)) {
+      // Intento alternativo subiendo un nivel (común en Vercel)
+      const altPath = path.join(process.cwd(), "..", "public", "car-logos-dataset", path.basename(path.dirname(filePath)), path.basename(filePath));
+      if (fs.existsSync(altPath)) {
+        targetPath = altPath;
+      } else {
+        // Si no existe, retornamos array vacío para no romper el build
+        console.warn(`[WARN] No se encontró JSON en: ${filePath}`);
+        return [] as unknown as T;
+      }
+    }
+    const raw = fs.readFileSync(targetPath, "utf-8");
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.error(`[ERROR] Fallo leyendo ${filePath}:`, error);
+    return [] as unknown as T;
+  }
 }
 
+// CORRECCIÓN: Generar URL absoluta (/car-logos-dataset/...)
 function normalizeDatasetPath(value: string) {
   const cleaned = value.replace(/^[.\\/]+/, "").replace(/\\/g, "/");
+  
+  // Aquí agregamos la ruta base pública para que el navegador la encuentre
+  const basePath = "/car-logos-dataset/logos";
+
   if (
     cleaned.startsWith("thumb/") ||
     cleaned.startsWith("optimized/") ||
     cleaned.startsWith("original/")
   ) {
-    return `logos/${cleaned}`;
+    return `${basePath}/${cleaned}`;
   }
-  return cleaned;
+  return `${basePath}/${cleaned}`;
 }
 
 export function getAllLogos(): Logo[] {
   const dataset = readJson<DatasetLogo[]>(LOGOS_DATA_PATH);
   const locals = readJson<LocalLogo[]>(LOCAL_LOGOS_PATH);
 
-  const datasetLogos: Logo[] = dataset
+  // Verificación de seguridad por si readJson devolvió algo que no es array
+  const safeDataset = Array.isArray(dataset) ? dataset : [];
+  const safeLocals = Array.isArray(locals) ? locals : [];
+
+  const datasetLogos: Logo[] = safeDataset
     .filter((logo) => !isExcludedLogo(logo))
     .map((logo) => ({
       name: logo.name,
@@ -136,15 +165,16 @@ export function getAllLogos(): Logo[] {
       isLocal: false,
     }));
 
-  const localLogos: Logo[] = locals
+  const localLogos: Logo[] = safeLocals
     .filter((logo) => !isExcludedLogo(logo))
     .map((logo) => ({
       name: logo.name,
       slug: logo.slug,
       images: {
-        thumb: `local-logos/${logo.fileName}`,
-        optimized: `local-logos/${logo.fileName}`,
-        original: `local-logos/${logo.fileName}`,
+        // CORRECCIÓN: Rutas absolutas para logos locales también
+        thumb: `/car-logos-dataset/local-logos/${logo.fileName}`,
+        optimized: `/car-logos-dataset/local-logos/${logo.fileName}`,
+        original: `/car-logos-dataset/local-logos/${logo.fileName}`,
       },
       isLocal: true,
     }));
