@@ -42,7 +42,7 @@ type QuizClientProps = {
   initialMode?: Mode | null;
 };
 
-// CORRECCIÓN: Ruta directa y optimizada
+// Mantenemos la ruta directa
 function getImageSrc(logo: Logo) {
   return logo.images.optimized;
 }
@@ -269,6 +269,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
   }, [current, mode]);
 
 
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <header className="border-b border-border/60 bg-background/80 backdrop-blur">
@@ -317,12 +318,12 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
       {questions.length > 0 && current && (
         <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
           <div className="flex flex-col items-center gap-4">
-            {/* SIN BORDES: Quitamos p-6 y bg-white */}
-            <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-muted/10">
+            {/* RESTAURADO: Fondo blanco y padding para LOGOS */}
+            <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-white p-6">
               <img
                 src={getImageSrc(current)}
                 alt={`Logo de ${current.name}`}
-                className={`max-h-[40vh] w-full object-contain ${
+                className={`max-h-[40vh] w-auto object-contain ${
                   mode === "country"
                     ? "blur-0"
                     : isRevealed
