@@ -20,7 +20,6 @@ import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY } from "@/lib/country-data";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Trophy } from "lucide-react";
 
 type Mode = "multiple" | "typed" | "country";
-
 type Option = {
   value: string;
   label: string;
@@ -43,8 +42,9 @@ type QuizClientProps = {
   initialMode?: Mode | null;
 };
 
+// CORRECCIÓN: Usamos ruta directa (sin /api/)
 function getImageSrc(logo: Logo) {
-  return `/api/logo/${logo.images.optimized}`;
+  return logo.images.optimized;
 }
 
 function formatTime(ms: number) {
@@ -69,7 +69,6 @@ function storageKey(tierId: string, mode: Mode) {
 
 export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClientProps) {
   const router = useRouter();
-
   const [selectDialogOpen, setSelectDialogOpen] = React.useState(!initialMode);
   const [resultDialogOpen, setResultDialogOpen] = React.useState(false);
   const [mode, setMode] = React.useState<Mode>("multiple");
@@ -204,14 +203,12 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
       completed: answeredCount,
       total,
     };
-
     const best = bestRuns[mode];
     const shouldReplace =
       !best ||
       run.completed > best.completed ||
       (run.completed === best.completed && accuracy > best.accuracy) ||
       (run.completed === best.completed && accuracy === best.accuracy && run.timeMs < best.timeMs);
-
     if (shouldReplace) {
       window.localStorage.setItem(storageKey(tierId, mode), JSON.stringify(run));
       setBestRuns((prev) => ({ ...prev, [mode]: run }));
@@ -270,6 +267,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
     }
     return current.name;
   }, [current, mode]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
@@ -385,8 +383,9 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                       }`}
                     >
                       {option.code && option.code !== UNKNOWN_COUNTRY.code ? (
+                        // CORRECCIÓN: Ruta directa a banderas SVG
                         <img
-                          src={`/api/flags/${option.code}?size=32`}
+                          src={`/flags/SVG/${option.code}.svg`}
                           alt={`Bandera de ${option.label}`}
                           className="h-6 w-9 rounded-sm border border-border/60 object-cover"
                           loading="lazy"
