@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 
+// CORRECCIÓN: Ruta directa, usamos .thumb que viene del objeto logo
 function getImageSrc(logo: Logo) {
-  return `/api/logo/${logo.images.thumb}`;
+  return logo.images.thumb;
 }
 
 type Props = {
@@ -22,7 +23,6 @@ type Props = {
 
 export function LogoTiers({ logos }: Props) {
   const tiers = groupLogosByTier(logos);
-
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
@@ -54,6 +54,7 @@ export function LogoTiers({ logos }: Props) {
                     </Button>
                   </CardAction>
                 </CardHeader>
+                
                 <CardContent className="flex flex-col gap-3">
                   <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
                     {tierLogos.slice(0, 6).map((logo, index) => (
