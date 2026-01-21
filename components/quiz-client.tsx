@@ -42,7 +42,7 @@ type QuizClientProps = {
   initialMode?: Mode | null;
 };
 
-// CORRECCIÓN: Usamos ruta directa (sin /api/)
+// CORRECCIÓN: Ruta directa y optimizada
 function getImageSrc(logo: Logo) {
   return logo.images.optimized;
 }
@@ -317,11 +317,12 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
       {questions.length > 0 && current && (
         <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
           <div className="flex flex-col items-center gap-4">
-            <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-white p-6">
+            {/* SIN BORDES: Quitamos p-6 y bg-white */}
+            <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-muted/10">
               <img
                 src={getImageSrc(current)}
                 alt={`Logo de ${current.name}`}
-                className={`max-h-[40vh] w-auto object-contain ${
+                className={`max-h-[40vh] w-full object-contain ${
                   mode === "country"
                     ? "blur-0"
                     : isRevealed
@@ -383,7 +384,6 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                       }`}
                     >
                       {option.code && option.code !== UNKNOWN_COUNTRY.code ? (
-                        // CORRECCIÓN: Ruta directa a banderas SVG
                         <img
                           src={`/flags/SVG/${option.code}.svg`}
                           alt={`Bandera de ${option.label}`}
