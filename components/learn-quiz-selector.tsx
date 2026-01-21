@@ -23,23 +23,37 @@ type Props = {
 
 type Mode = "brand" | "model" | null;
 
+// CORRECCIÓN 1: Eliminamos "/api/logo/" para usar la ruta directa pública
 function getImageSrc(logo: Logo | undefined) {
   if (!logo) {
     return null;
   }
-  return `/api/logo/${logo.images.thumb}`;
+  return logo.images.thumb;
 }
 
 export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props) {
   const [mode, setMode] = React.useState<Mode>(null);
+  
+  // CORRECCIÓN 2: Referencia para el scroll automático
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  const handleModeSelect = (newMode: Mode) => {
+    setMode(newMode);
+    // Esperamos un momento para que el navegador renderice la apertura y luego scrolleamos
+    setTimeout(() => {
+      contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  };
 
   return (
     <section className="flex flex-col gap-8">
       <div className="grid gap-4 sm:grid-cols-2">
         <button
           type="button"
-          onClick={() => setMode("brand")}
-          className="rounded-2xl border border-border/60 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-lg dark:bg-black/30"
+          onClick={() => handleModeSelect("brand")}
+          className={`rounded-2xl border p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:bg-black/30 ${
+            mode === "brand" ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border/60 bg-white"
+          }`}
         >
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -59,8 +73,10 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
 
         <button
           type="button"
-          onClick={() => setMode("model")}
-          className="rounded-2xl border border-border/60 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-lg dark:bg-black/30"
+          onClick={() => handleModeSelect("model")}
+          className={`rounded-2xl border p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:bg-black/30 ${
+            mode === "model" ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border/60 bg-white"
+          }`}
         >
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -79,71 +95,76 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
         </button>
       </div>
 
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          mode === "brand"
-            ? "max-h-none opacity-100 translate-y-0"
-            : "max-h-0 opacity-0 translate-y-2 pointer-events-none"
-        }`}
-      >
-        <LogoTiers logos={logos} />
-      </div>
+      {/* Ancla para el scroll automático */}
+      <div ref={contentRef} className="scroll-mt-24">
+        {/* Sección de Logos (Brand) */}
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            mode === "brand"
+              ? "max-h-[5000px] opacity-100 translate-y-0"
+              : "max-h-0 opacity-0 translate-y-2 pointer-events-none"
+          }`}
+        >
+          <LogoTiers logos={logos} />
+        </div>
 
-      <div
-        className={`overflow-hidden transition-all duration-300 ${
-          mode === "model"
-            ? "max-h-none opacity-100 translate-y-0"
-            : "max-h-0 opacity-0 translate-y-2 pointer-events-none"
-        }`}
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Marcas con modelos</h2>
-            <Badge variant="secondary">{modelBrands.length} marcas</Badge>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {modelBrands.map((brand) => {
-              const logo = logoByBrandKey[brand.key];
-              const imageSrc = getImageSrc(logo);
-              return (
-                <Link key={brand.key} href={`/model-quiz/${brand.key}`} className="group">
-                  <Card className="relative flex flex-col border-border/60 bg-white transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-xl dark:bg-black/30">
-                    <CardContent className="flex h-full flex-col gap-4 p-5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-white">
-                          {imageSrc ? (
-                            <img
-                              src={imageSrc}
-                              alt={`Logo de ${brand.name}`}
-                              className="max-h-6 w-auto object-contain"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Logo</span>
-                          )}
+        {/* Sección de Modelos */}
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            mode === "model"
+              ? "max-h-[5000px] opacity-100 translate-y-0"
+              : "max-h-0 opacity-0 translate-y-2 pointer-events-none"
+          }`}
+        >
+          <div className="flex flex-col gap-4 pt-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Marcas con modelos</h2>
+              <Badge variant="secondary">{modelBrands.length} marcas</Badge>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {modelBrands.map((brand) => {
+                const logo = logoByBrandKey[brand.key];
+                const imageSrc = getImageSrc(logo);
+                return (
+                  <Link key={brand.key} href={`/model-quiz/${brand.key}`} className="group">
+                    <Card className="relative flex flex-col border-border/60 bg-white transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-xl dark:bg-black/30">
+                      <CardContent className="flex h-full flex-col gap-4 p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-white p-1">
+                            {imageSrc ? (
+                              <img
+                                src={imageSrc}
+                                alt={`Logo de ${brand.name}`}
+                                className="max-h-full w-auto object-contain"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Logo</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-lg font-semibold text-foreground">{brand.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {brand.modelCount} modelos
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-lg font-semibold text-foreground">{brand.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {brand.modelCount} modelos
-                          </p>
+                        <div className="mt-auto flex items-center justify-end">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-9 w-9 rounded-full border-border/60 bg-background/80 hover:bg-foreground/10"
+                            aria-label="Ver marca"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </div>
-                      <div className="mt-auto flex items-center justify-end">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-9 w-9 rounded-full border-border/60 bg-background/80 hover:bg-foreground/10"
-                          aria-label="Ver marca"
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
