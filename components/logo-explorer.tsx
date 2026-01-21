@@ -41,7 +41,6 @@ type Props = {
   brandModelLinks?: Record<string, string>;
 };
 
-// CORRECCIÓN: Devolvemos la ruta directa (ya viene correcta desde lib/logos.ts)
 function getImageSrc(logo: Logo, size: LogoSize) {
   return logo.images[size];
 }
@@ -241,6 +240,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
     return items;
   }, [filteredByCountry, groupMode, sort]);
 
+
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
@@ -359,7 +359,6 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                 </span>
                 <span className="flex items-center gap-2">
                   {countryFilterFlag ? (
-                    // CORRECCIÓN: Bandera con ruta directa
                     <img
                       src={`/flags/SVG/${countryFilterFlag}.svg`}
                       alt=""
@@ -393,7 +392,6 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                   {countryOptions.map((country) => (
                     <SelectItem key={country.code} value={country.code}>
                       <span className="flex items-center gap-2">
-                        {/* CORRECCIÓN: Bandera con ruta directa */}
                         <img
                           src={`/flags/SVG/${country.code}.svg`}
                           alt=""
@@ -418,7 +416,6 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
             <div key={group.key} className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 {group.country && group.country.code !== UNKNOWN_COUNTRY.code ? (
-                  // CORRECCIÓN: Bandera con ruta directa
                   <img
                     src={`/flags/SVG/${group.country.code}.svg`}
                     alt=""
@@ -536,11 +533,12 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
           </DialogHeader>
           {selected && (
             <div className="flex flex-col items-center gap-4">
-              <div className="flex w-full items-center justify-center rounded-2xl bg-white p-6">
+              {/* SIN BORDES: Quitamos p-6 y bg-white */}
+              <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent">
                 <img
                   src={getImageSrc(selected, "original")}
                   alt={`Logo de ${selected.name}`}
-                  className="max-h-[70vh] w-auto object-contain"
+                  className="max-h-[70vh] w-full object-contain"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
