@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -31,7 +30,6 @@ type Props = {
   logos: Logo[];
 };
 
-// CORRECCIÓN: Ruta directa, sin /api/logo
 function getImageSrc(logo: Logo, size: LogoSize) {
   return logo.images[size];
 }
@@ -253,7 +251,6 @@ export function TierGallery({ logos }: Props) {
             <div key={group.key} className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 {group.country && group.country.code !== UNKNOWN_COUNTRY.code ? (
-                  // CORRECCIÓN: Ruta de bandera directa
                   <img
                     src={`/flags/SVG/${group.country.code}.svg`}
                     alt=""
@@ -313,11 +310,12 @@ export function TierGallery({ logos }: Props) {
           </DialogHeader>
           {selected && (
             <div className="flex flex-col items-center gap-4">
-              <div className="flex w-full items-center justify-center rounded-2xl bg-white p-6">
+              {/* CORRECCIÓN: Fondo transparente y sin padding */}
+              <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent">
                 <img
                   src={getImageSrc(selected, "original")}
                   alt={`Logo de ${selected.name}`}
-                  className="max-h-[70vh] w-auto object-contain"
+                  className="max-h-[70vh] w-full object-contain"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
