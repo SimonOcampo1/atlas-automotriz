@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 
-// CORRECCIÓN: Ruta directa, usamos .thumb que viene del objeto logo
+// CORRECCIÓN: Ruta directa
 function getImageSrc(logo: Logo) {
   return logo.images.thumb;
 }
@@ -23,6 +23,7 @@ type Props = {
 
 export function LogoTiers({ logos }: Props) {
   const tiers = groupLogosByTier(logos);
+
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
@@ -62,6 +63,7 @@ export function LogoTiers({ logos }: Props) {
                         key={`${tier.id}-${logo.slug}-${logo.isLocal ? "local" : "dataset"}-${index}`}
                         className="flex items-center gap-2 rounded-lg border border-border/60 bg-white p-2 shadow-sm dark:bg-black/30"
                       >
+                        {/* RESTAURADO: Fondo blanco para los mini logos */}
                         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white">
                           <img
                             src={getImageSrc(logo)}
