@@ -142,6 +142,99 @@ function tokenize(value: string) {
     .filter(Boolean);
 }
 
+const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
+  "alfa-romeo": {
+    "145-146": ["145", "146"],
+    "concepts": ["visconti", "kamal", "centauri", "dardo", "nuvola", "scarabeo", "canguro"],
+  },
+  alpina: {
+    "x3": ["x3"],
+    "x4": ["x4"],
+    "x7": ["x7"],
+  },
+  audi: {
+    "concept-cars": ["concept"],
+    "80": ["80"],
+    "90": ["90"],
+    "200": ["200"],
+  },
+  bmw: {
+    "z3": ["e36/8", "e36-8", "z3 coupe", "z3 roadster"],
+    "concept-cars": ["i3 concept", "i8 concept", "z9 concept", "nazca", "turbo prototype"],
+  },
+  buick: {
+    "le-sabre": ["lesabre", "le sabre"],
+  },
+  chrysler: {
+    "300": ["300c"],
+  },
+  dodge: {
+    "caravan-grand-caravan": ["caravan", "grand caravan"],
+  },
+  ds: {
+    "ds-3": ["ds3", "ds 3"],
+  },
+  ford: {
+    "escort-europe": ["escort i", "escort ii", "escort iii", "escort iv", "escort v", "escort vi"],
+    "orion": ["orion i", "orion ii", "orion iii"],
+    "falcon-australia": ["falcon", "fg", "au", "bf", "el", "xa", "xb", "xr", "xk", "xl"],
+    "focus-europe": ["focus", "focus 1", "focus 2", "focus 3", "focus 4"],
+  },
+  jeep: {
+    "avenger": ["avenger"],
+  },
+  "land-rover": {
+    "evoque": ["evoque", "range rover evoque"],
+  },
+  maserati: {
+    "400": ["4.24v", "422", "425"],
+  },
+  "mercedes-benz": {
+    "1930s": ["w07", "w22", "w18", "w29", "w143", "w24", "w138", "w28", "w142", "w129"],
+    "1940s-50s": ["w157", "w136", "w186", "w188", "w189", "w187", "w121", "w120", "w180", "w105", "w128"],
+    "cl-class": ["c216", "c215"],
+    "cle-class": ["c236", "a236"],
+    "glc-coupe": ["c254", "c253"],
+    "glk-class": ["x204"],
+    "m-class": ["w166", "w164", "w163"],
+    "sl-class": ["r232", "r231", "r230", "r129", "r107", "w113", "w198", "w121", "z232"],
+  },
+  mercury: {
+    "cougar": ["cougar"],
+  },
+  mg: {
+    "zs": ["zs", "zs sedan"],
+  },
+  nissan: {
+    "200sx": ["s15", "s14", "s13", "s12", "silvia"],
+    "z-series": ["370z", "350 z", "300 zx", "300zx", "z34", "z33", "z32", "z31"],
+  },
+  opel: {
+    "agila": ["agila a", "agila b"],
+  },
+  peugeot: {
+    "407": ["407 coupe", "407"],
+    "504": ["504", "504 coupe", "504 cabriolet", "504 break"],
+  },
+  seat: {
+    "exeo": ["exeo"],
+  },
+  suzuki: {
+    "sj-samurai": ["samurai", "santana"],
+  },
+  volvo: {
+    "120-amazon": ["120", "122", "123", "130", "220", "amazon"],
+    "140-164": ["140", "142", "144", "164"],
+    "200-series": ["240", "242", "244", "245", "260", "264", "265"],
+    "300-series": ["340", "360"],
+    "400-series": ["440", "460", "480"],
+    "900-series": ["940", "960"],
+    "s40": ["s40", "s40 i", "s40 ii"],
+    "v70": ["v70", "v70 xc"],
+    "xc70": ["xc70", "xc70 ii"],
+  },
+};
+
 function getNumericTokens(tokens: string[]) {
   return tokens.filter((token) => /\d/.test(token));
 }
@@ -172,6 +265,7 @@ function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
   const slugKey = modelKeyFromGenerationRecord(record);
   const nameKey = normalizeKey(record.name);
   const modelKey = model.key;
+  const brandKey = model.brandKey;
 
   let score = 0;
 
@@ -205,6 +299,18 @@ function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
   const lowerModel = model.name.toLowerCase();
   if (lowerModel.includes(lowerName) || lowerName.includes(lowerModel)) {
     score += 10;
+  }
+
+  const aliases = MODEL_ALIAS_MAP[brandKey]?.[modelKey] ?? [];
+  if (aliases.length > 0) {
+    const normalizedName = normalizeKey(record.name);
+    for (const alias of aliases) {
+      const aliasKey = normalizeKey(alias);
+      if (normalizedName.includes(aliasKey)) {
+        score += 35;
+        break;
+      }
+    }
   }
 
   return score;

@@ -1,0 +1,341 @@
+{
+  "count": 48,
+  "items": [
+    {
+      "brand": "Alfa Romeo",
+      "model": "Concepts",
+      "modelKey": "concepts",
+      "years": "1964-2004",
+      "generationCount": 0
+    },
+    {
+      "brand": "Alfa Romeo",
+      "model": "Junior",
+      "modelKey": "junior",
+      "years": "2024-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Alpina",
+      "model": "X3",
+      "modelKey": "x3",
+      "years": "2013-2021",
+      "generationCount": 0
+    },
+    {
+      "brand": "Alpina",
+      "model": "X4",
+      "modelKey": "x4",
+      "years": "2018-2021",
+      "generationCount": 0
+    },
+    {
+      "brand": "Alpina",
+      "model": "X7",
+      "modelKey": "x7",
+      "years": "2020-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Audi",
+      "model": "200",
+      "modelKey": "200",
+      "years": "1976-1991",
+      "generationCount": 0
+    },
+    {
+      "brand": "Audi",
+      "model": "80",
+      "modelKey": "80",
+      "years": "1978-1996",
+      "generationCount": 0
+    },
+    {
+      "brand": "Audi",
+      "model": "90",
+      "modelKey": "90",
+      "years": "1984-1991",
+      "generationCount": 0
+    },
+    {
+      "brand": "Audi",
+      "model": "Concept Cars",
+      "modelKey": "concept-cars",
+      "years": "1973-2003",
+      "generationCount": 0
+    },
+    {
+      "brand": "BMW",
+      "model": "Concept Cars",
+      "modelKey": "concept-cars",
+      "years": "1972-2011",
+      "generationCount": 0
+    },
+    {
+      "brand": "BMW",
+      "model": "Z3",
+      "modelKey": "z3",
+      "years": "1995-2002",
+      "generationCount": 0
+    },
+    {
+      "brand": "Buick",
+      "model": "Le Sabre",
+      "modelKey": "le-sabre",
+      "years": "1958-2005",
+      "generationCount": 0
+    },
+    {
+      "brand": "Chrysler",
+      "model": "300",
+      "modelKey": "300",
+      "years": "2003-2010",
+      "generationCount": 0
+    },
+    {
+      "brand": "Dodge",
+      "model": "Caravan / Grand Caravan",
+      "modelKey": "caravan-grand-caravan",
+      "years": "1983-2020",
+      "generationCount": 0
+    },
+    {
+      "brand": "DS",
+      "model": "DS 3",
+      "modelKey": "ds-3",
+      "years": "2016-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Ford",
+      "model": "Escort (Europe)",
+      "modelKey": "escort-europe",
+      "years": "1968-2004",
+      "generationCount": 0
+    },
+    {
+      "brand": "Ford",
+      "model": "Orion",
+      "modelKey": "orion",
+      "years": "1983-1993",
+      "generationCount": 0
+    },
+    {
+      "brand": "Jeep",
+      "model": "Avenger",
+      "modelKey": "avenger",
+      "years": "2022-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Land Rover",
+      "model": "Evoque",
+      "modelKey": "evoque",
+      "years": "2011-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Maserati",
+      "model": "400",
+      "modelKey": "400",
+      "years": "1983-1994",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "1930s",
+      "modelKey": "1930s",
+      "years": "1930-1941",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "1940s-50s",
+      "modelKey": "1940s-50s",
+      "years": "1941-1962",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "CL-Class",
+      "modelKey": "cl-class",
+      "years": "1999-2013",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "CLE-Class",
+      "modelKey": "cle-class",
+      "years": "2023-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "GLC Coupé",
+      "modelKey": "glc-coupe",
+      "years": "2016-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "GLK-Class",
+      "modelKey": "glk-class",
+      "years": "2008-2015",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "M-Class",
+      "modelKey": "m-class",
+      "years": "1997-2015",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "SL-Class",
+      "modelKey": "sl-class",
+      "years": "1954-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercedes Benz",
+      "model": "V-Class / Viano",
+      "modelKey": "v-class-viano",
+      "years": "1996-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Mercury",
+      "model": "Cougar",
+      "modelKey": "cougar",
+      "years": "1967-1970",
+      "generationCount": 0
+    },
+    {
+      "brand": "MG",
+      "model": "ZS (crossover)",
+      "modelKey": "zs-crossover",
+      "years": "2019-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Nissan",
+      "model": "200SX / Silvia",
+      "modelKey": "200sx-silvia",
+      "years": "1984-2002",
+      "generationCount": 0
+    },
+    {
+      "brand": "Nissan",
+      "model": "Z series / Fairlady Z",
+      "modelKey": "z-series-fairlady-z",
+      "years": "1983-Present",
+      "generationCount": 0
+    },
+    {
+      "brand": "Opel",
+      "model": "Agila",
+      "modelKey": "agila",
+      "years": "2000-2014",
+      "generationCount": 0
+    },
+    {
+      "brand": "Opel",
+      "model": "Meriva",
+      "modelKey": "meriva",
+      "years": "2003-2017",
+      "generationCount": 0
+    },
+    {
+      "brand": "Peugeot",
+      "model": "407",
+      "modelKey": "407",
+      "years": "2004-2012",
+      "generationCount": 0
+    },
+    {
+      "brand": "Peugeot",
+      "model": "504",
+      "modelKey": "504",
+      "years": "1968-1983",
+      "generationCount": 0
+    },
+    {
+      "brand": "Seat",
+      "model": "Exeo",
+      "modelKey": "exeo",
+      "years": "2009-2013",
+      "generationCount": 0
+    },
+    {
+      "brand": "Suzuki",
+      "model": "SJ / Samurai",
+      "modelKey": "sj-samurai",
+      "years": "1998-2003",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "120 Amazon",
+      "modelKey": "120-amazon",
+      "years": "1956-1970",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "140 - 164",
+      "modelKey": "140-164",
+      "years": "1966-1975",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "200 Series",
+      "modelKey": "200-series",
+      "years": "1974-1993",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "300 Series",
+      "modelKey": "300-series",
+      "years": "1976-1991",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "400 Series",
+      "modelKey": "400-series",
+      "years": "1986-1996",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "900 Series",
+      "modelKey": "900-series",
+      "years": "1990-1998",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "S40",
+      "modelKey": "s40",
+      "years": "1995-2012",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "V70",
+      "modelKey": "v70",
+      "years": "1997-2016",
+      "generationCount": 0
+    },
+    {
+      "brand": "Volvo",
+      "model": "XC70",
+      "modelKey": "xc70",
+      "years": "2000-2016",
+      "generationCount": 0
+    }
+  ]
+}
