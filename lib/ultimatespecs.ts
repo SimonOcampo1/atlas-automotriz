@@ -46,9 +46,12 @@ type RawRecord = {
 };
 
 const IMAGE_ROOT_TOKENS = ["ultimatespecs_images", "ultimatespecs"];
+const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 let cachedIndex: UltimateSpecsBrand[] | null = null;
 let cachedBrandMap: Map<string, UltimateSpecsBrand> | null = null;
+let cachedBrandFolderMap: Map<string, string> | null = null;
+let cachedBrandImages: Map<string, string[]> | null = null;
 
 function normalizeKey(value: string) {
   return value
@@ -58,6 +61,56 @@ function normalizeKey(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .trim();
+}
+
+function buildBrandFolderMap() {
+  if (cachedBrandFolderMap) {
+    return cachedBrandFolderMap;
+  }
+  const root = path.join(process.cwd(), "public", "ultimatespecs");
+  const map = new Map<string, string>();
+  try {
+    const entries = fs.readdirSync(root, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      const dirName = entry.name;
+      const normalized = normalizeKey(dirName.replace(/_/g, " "));
+      map.set(normalized, dirName);
+    }
+  } catch (error) {
+    console.warn("[WARN] No se pudo leer carpeta ultimatespecs:", error);
+  }
+  cachedBrandFolderMap = map;
+  return map;
+}
+
+function getBrandFolder(brandName: string) {
+  const map = buildBrandFolderMap();
+  const normalized = normalizeKey(brandName);
+  return map.get(normalized) ?? brandName.replace(/\s+/g, "_");
+}
+
+function getBrandImages(brandName: string) {
+  if (!cachedBrandImages) {
+    cachedBrandImages = new Map();
+  }
+  const brandFolder = getBrandFolder(brandName);
+  const cached = cachedBrandImages.get(brandFolder);
+  if (cached) {
+    return cached;
+  }
+  const folderPath = path.join(process.cwd(), "public", "ultimatespecs", brandFolder);
+  let files: string[] = [];
+  try {
+    files = fs.readdirSync(folderPath)
+      .filter((file) => IMAGE_EXTENSIONS.has(path.extname(file).toLowerCase()));
+  } catch {
+    files = [];
+  }
+  cachedBrandImages.set(brandFolder, files);
+  return files;
 }
 
 function normalizeBrandKey(brand: string) {
@@ -146,6 +199,7 @@ const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
   "alfa-romeo": {
     "145-146": ["145", "146"],
     "concepts": ["visconti", "kamal", "centauri", "dardo", "nuvola", "scarabeo", "canguro"],
+    "junior": ["junior"],
   },
   alpina: {
     "x3": ["x3"],
@@ -235,6 +289,100 @@ const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
   },
 };
 
+const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
+  "alfa-romeo": {
+    "145-146": ["145", "146"],
+    "concepts": ["visconti", "kamal", "centauri", "dardo", "nuvola", "scarabeo", "canguro"],
+    "junior": ["junior"],
+  },
+  alpina: {
+    "x3": ["x3"],
+    "x4": ["x4"],
+    "x7": ["x7"],
+  },
+  audi: {
+    "concept-cars": ["concept"],
+    "80": ["80"],
+    "90": ["90"],
+    "200": ["200"],
+  },
+  bmw: {
+    "z3": ["e36/8", "e36-8", "e36/7", "z3 coupe", "z3 roadster"],
+    "concept-cars": ["i3 concept", "i8 concept", "z9 concept", "nazca", "turbo prototype"],
+  },
+  buick: {
+    "le-sabre": ["lesabre", "le sabre"],
+  },
+  chrysler: {
+    "300": ["300c"],
+  },
+  dodge: {
+    "caravan-grand-caravan": ["caravan", "grand caravan"],
+  },
+  ds: {
+    "ds-3": ["ds3", "ds 3"],
+  },
+  ford: {
+    "escort-europe": ["escort"],
+    "orion": ["orion"],
+    "falcon-australia": ["falcon", "fg", "au", "bf", "el", "xa", "xb", "xr", "xk", "xl"],
+    "focus-europe": ["focus"],
+  },
+  jeep: {
+    "avenger": ["avenger"],
+  },
+  "land-rover": {
+    "evoque": ["evoque", "range rover evoque"],
+  },
+  maserati: {
+    "400": ["400 series", "4.24v", "422", "425"],
+  },
+  "mercedes-benz": {
+    "1930s": ["w07", "w22", "w18", "w29", "w143", "w24", "w138", "w28", "w142", "w129"],
+    "1940s-50s": ["w157", "w136", "w186", "w188", "w189", "w187", "w121", "w120", "w180", "w105", "w128"],
+    "cl-class": ["c216", "c215", "cl"],
+    "cle-class": ["c236", "a236", "cle"],
+    "glc-coupe": ["c254", "c253", "glc coupe", "glc coupé"],
+    "glk-class": ["x204", "glk"],
+    "m-class": ["w166", "w164", "w163", "ml class"],
+    "sl-class": ["r232", "r231", "r230", "r129", "r107", "w113", "w198", "w121", "z232", "sl"],
+  },
+  mercury: {
+    "cougar": ["cougar"],
+  },
+  mg: {
+    "zs": ["zs"],
+  },
+  nissan: {
+    "200sx": ["200 sx", "200sx", "s15", "s14", "s13", "s12", "silvia"],
+    "z-series": ["370z", "350 z", "300 zx", "300zx", "z34", "z33", "z32", "z31"],
+  },
+  opel: {
+    "agila": ["agila"],
+  },
+  peugeot: {
+    "407": ["407"],
+    "504": ["504"],
+  },
+  seat: {
+    "exeo": ["exeo"],
+  },
+  suzuki: {
+    "sj-samurai": ["samurai", "santana"],
+  },
+  volvo: {
+    "120-amazon": ["120", "122", "123", "130", "220", "amazon"],
+    "140-164": ["140", "142", "144", "164"],
+    "200-series": ["240", "242", "244", "245", "260", "264", "265", "200 series"],
+    "300-series": ["340", "360"],
+    "400-series": ["440", "460", "480"],
+    "900-series": ["940", "960"],
+    "s40": ["s40"],
+    "v70": ["v70", "v70 xc"],
+    "xc70": ["xc70"],
+  },
+};
+
 function getNumericTokens(tokens: string[]) {
   return tokens.filter((token) => /\d/.test(token));
 }
@@ -316,6 +464,28 @@ function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
   return score;
 }
 
+function scoreImageForGeneration(model: UltimateSpecsModel, generation: UltimateSpecsGeneration, fileName: string) {
+  const fileBase = fileName.replace(/\.[^/.]+$/, "");
+  const fileTokens = new Set(tokenize(fileBase));
+  const genTokens = new Set(tokenize(generation.name));
+  const modelTokens = new Set([...tokenize(model.name), ...tokenize(model.key)]);
+
+  const modelOverlap = countOverlap(fileTokens, modelTokens);
+  if (modelOverlap === 0) {
+    return 0;
+  }
+
+  const overlap = countOverlap(fileTokens, genTokens);
+  let score = overlap * 10 + modelOverlap * 20;
+
+  const normalizedFile = normalizeKey(fileBase);
+  if (normalizedFile.includes(model.key)) {
+    score += 25;
+  }
+
+  return score;
+}
+
 function parseYears(value: string) {
   const numbers = value.match(/\d{4}/g) ?? [];
   const start = numbers[0] ? Number(numbers[0]) : null;
@@ -390,6 +560,7 @@ function buildIndex() {
   const records = loadRecords();
   const brandMap = new Map<string, UltimateSpecsBrand>();
   const modelMap = new Map<string, UltimateSpecsModel>();
+  const generationMap = new Map<string, RawRecord[]>();
 
   for (const record of records) {
     const brandKey = normalizeBrandKey(record.brand);
@@ -417,6 +588,12 @@ function buildIndex() {
         modelMap.set(modelId, model);
         brand.models.push(model);
       }
+    }
+
+    if (record.category === "Generation") {
+      const list = generationMap.get(brandKey) ?? [];
+      list.push(record);
+      generationMap.set(brandKey, list);
     }
 
     brandMap.set(brandKey, brand);
@@ -483,6 +660,68 @@ function buildIndex() {
     };
 
     model.generations.push(generation);
+  }
+
+  for (const model of modelMap.values()) {
+    for (const generation of model.generations) {
+      if (generation.image.local || generation.image.url) {
+        continue;
+      }
+      const files = getBrandImages(model.brand);
+      if (files.length === 0) {
+        continue;
+      }
+      let best: { file: string; score: number } | null = null;
+      for (const file of files) {
+        const score = scoreImageForGeneration(model, generation, file);
+        if (score <= 0) {
+          continue;
+        }
+        if (!best || score > best.score) {
+          best = { file, score };
+        }
+      }
+      if (best) {
+        const brandFolder = getBrandFolder(model.brand);
+        generation.image.local = `${brandFolder}/${best.file}`;
+      }
+    }
+  }
+
+  for (const model of modelMap.values()) {
+    const overridePatterns = MODEL_GENERATION_OVERRIDES[model.brandKey]?.[model.key];
+    if (!overridePatterns || overridePatterns.length === 0) {
+      continue;
+    }
+    const generations = generationMap.get(model.brandKey) ?? [];
+    if (generations.length === 0) {
+      continue;
+    }
+    const normalizedPatterns = overridePatterns.map((pattern) => normalizeKey(pattern));
+    const existing = new Set(model.generations.map((gen) => normalizeKey(gen.name)));
+    const matches = generations.filter((record) => {
+      const normalizedName = normalizeKey(record.name);
+      if (existing.has(normalizedName)) {
+        return false;
+      }
+      return normalizedPatterns.some((pattern) => normalizedName.includes(pattern));
+    });
+
+    for (const record of matches) {
+      const modelKey = model.key;
+      const generation: UltimateSpecsGeneration = {
+        id: `${model.id}:${normalizeKey(record.name)}`,
+        name: record.name,
+        years: record.years,
+        image: {
+          local: normalizeLocalImagePath(record.local_image),
+          url: record.image_url ?? null,
+        },
+        modelKey,
+        brandKey: model.brandKey,
+      };
+      model.generations.push(generation);
+    }
   }
 
   for (const model of modelMap.values()) {

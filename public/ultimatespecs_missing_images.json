@@ -1,5 +1,5 @@
 {
-  "count": 48,
+  "count": 45,
   "items": [
     {
       "brand": "Alfa Romeo",
@@ -93,13 +93,6 @@
       "generationCount": 0
     },
     {
-      "brand": "Dodge",
-      "model": "Caravan / Grand Caravan",
-      "modelKey": "caravan-grand-caravan",
-      "years": "1983-2020",
-      "generationCount": 0
-    },
-    {
       "brand": "DS",
       "model": "DS 3",
       "modelKey": "ds-3",
@@ -118,13 +111,6 @@
       "model": "Orion",
       "modelKey": "orion",
       "years": "1983-1993",
-      "generationCount": 0
-    },
-    {
-      "brand": "Jeep",
-      "model": "Avenger",
-      "modelKey": "avenger",
-      "years": "2022-Present",
       "generationCount": 0
     },
     {
@@ -202,13 +188,6 @@
       "model": "V-Class / Viano",
       "modelKey": "v-class-viano",
       "years": "1996-Present",
-      "generationCount": 0
-    },
-    {
-      "brand": "Mercury",
-      "model": "Cougar",
-      "modelKey": "cougar",
-      "years": "1967-1970",
       "generationCount": 0
     },
     {
