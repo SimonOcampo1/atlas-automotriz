@@ -2,6 +2,7 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
+import { buildAssetUrl } from "@/lib/assets";
 
 export type LogoSize = "thumb" | "optimized" | "original";
 
@@ -132,7 +133,7 @@ function normalizeDatasetPath(value: string) {
   const cleaned = value.replace(/^[.\\/]+/, "").replace(/\\/g, "/");
   
   // Aquí agregamos la ruta base pública para que el navegador la encuentre
-  const basePath = "/car-logos-dataset/logos";
+  const basePath = buildAssetUrl("/car-logos-dataset/logos");
 
   if (
     cleaned.startsWith("thumb/") ||
@@ -172,9 +173,9 @@ export function getAllLogos(): Logo[] {
       slug: logo.slug,
       images: {
         // CORRECCIÓN: Rutas absolutas para logos locales también
-        thumb: `/car-logos-dataset/local-logos/${logo.fileName}`,
-        optimized: `/car-logos-dataset/local-logos/${logo.fileName}`,
-        original: `/car-logos-dataset/local-logos/${logo.fileName}`,
+        thumb: buildAssetUrl(`/car-logos-dataset/local-logos/${logo.fileName}`),
+        optimized: buildAssetUrl(`/car-logos-dataset/local-logos/${logo.fileName}`),
+        original: buildAssetUrl(`/car-logos-dataset/local-logos/${logo.fileName}`),
       },
       isLocal: true,
     }));

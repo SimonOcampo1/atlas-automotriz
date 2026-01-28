@@ -28,6 +28,7 @@ import {
   COUNTRIES,
   COUNTRY_BY_CODE,
   UNKNOWN_COUNTRY,
+  getFlagSrc,
 } from "@/lib/country-data";
 import { BRAND_COUNTRY_BY_SLUG } from "@/lib/brand-country-map";
 
@@ -363,7 +364,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                   {countryFilterFlag ? (
                     // CORRECCIÓN: Ruta directa a banderas SVG
                     <img
-                      src={`/flags/SVG/${countryFilterFlag}.svg`}
+                      src={getFlagSrc(countryFilterFlag)}
                       alt=""
                       className="h-4 w-6 rounded-sm object-cover"
                       loading="lazy"
@@ -397,7 +398,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                       <span className="flex items-center gap-2">
                         {/* CORRECCIÓN: Ruta directa a banderas SVG */}
                         <img
-                          src={`/flags/SVG/${country.code}.svg`}
+                          src={getFlagSrc(country.code)}
                           alt=""
                           className="h-4 w-6 rounded-sm object-cover"
                           loading="lazy"
@@ -422,7 +423,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                 {group.country && group.country.code !== UNKNOWN_COUNTRY.code ? (
                   // CORRECCIÓN: Ruta directa a banderas SVG
                   <img
-                    src={`/flags/SVG/${group.country.code}.svg`}
+                    src={getFlagSrc(group.country.code)}
                     alt=""
                     className="h-5 w-5 rounded-sm"
                   />

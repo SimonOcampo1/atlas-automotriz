@@ -1,3 +1,5 @@
+import { buildAssetUrl } from "@/lib/assets";
+
 export type CountryInfo = {
   code: string;
   name: string;
@@ -327,5 +329,5 @@ export const COUNTRY_BY_CODE: Record<string, CountryInfo> = COUNTRIES.reduce(
 
 // NUEVO: Helper para garantizar que las banderas carguen desde la URL pública
 export function getFlagSrc(code: string) {
-  return `/flags/SVG/${code}.svg`;
+  return buildAssetUrl(`/flags/SVG/${code}.svg`);
 }

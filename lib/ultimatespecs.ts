@@ -2,6 +2,7 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
+import { buildAssetUrl } from "@/lib/assets";
 
 export type UltimateSpecsImage = {
   local: string | null;
@@ -44,7 +45,7 @@ type RawRecord = {
   local_image?: string | null;
 };
 
-const IMAGE_ROOT_TOKEN = "ultimatespecs_images";
+const IMAGE_ROOT_TOKENS = ["ultimatespecs_images", "ultimatespecs"];
 
 let cachedIndex: UltimateSpecsBrand[] | null = null;
 let cachedBrandMap: Map<string, UltimateSpecsBrand> | null = null;
@@ -134,6 +135,81 @@ function generationBaseName(record: RawRecord) {
   return cleaned || record.name;
 }
 
+function tokenize(value: string) {
+  return normalizeKey(value)
+    .split("-")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function getNumericTokens(tokens: string[]) {
+  return tokens.filter((token) => /\d/.test(token));
+}
+
+function countOverlap(a: Set<string>, b: Set<string>) {
+  let count = 0;
+  for (const token of a) {
+    if (b.has(token)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function isSubset(a: Set<string>, b: Set<string>) {
+  if (a.size === 0) {
+    return false;
+  }
+  for (const token of a) {
+    if (!b.has(token)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
+  const slugKey = modelKeyFromGenerationRecord(record);
+  const nameKey = normalizeKey(record.name);
+  const modelKey = model.key;
+
+  let score = 0;
+
+  if (modelKey === slugKey) {
+    score += 100;
+  }
+  if (modelKey === nameKey) {
+    score += 90;
+  }
+
+  const genTokens = new Set([...tokenize(record.name), ...tokenize(slugKey)]);
+  const modelTokens = new Set([...tokenize(model.name), ...tokenize(modelKey)]);
+  const overlap = countOverlap(genTokens, modelTokens);
+  score += overlap * 10;
+
+  const genNumbers = new Set(getNumericTokens(Array.from(genTokens)));
+  const modelNumbers = new Set(getNumericTokens(Array.from(modelTokens)));
+  if (countOverlap(genNumbers, modelNumbers) > 0) {
+    score += 20;
+  }
+
+  if (isSubset(genTokens, modelTokens) || isSubset(modelTokens, genTokens)) {
+    score += 30;
+  }
+
+  if (modelKey.includes(slugKey) || slugKey.includes(modelKey)) {
+    score += 15;
+  }
+
+  const lowerName = record.name.toLowerCase();
+  const lowerModel = model.name.toLowerCase();
+  if (lowerModel.includes(lowerName) || lowerName.includes(lowerModel)) {
+    score += 10;
+  }
+
+  return score;
+}
+
 function parseYears(value: string) {
   const numbers = value.match(/\d{4}/g) ?? [];
   const start = numbers[0] ? Number(numbers[0]) : null;
@@ -150,10 +226,12 @@ function normalizeLocalImagePath(value?: string | null) {
   }
   const normalized = value.replace(/\\/g, "/");
   const lower = normalized.toLowerCase();
-  const token = `/${IMAGE_ROOT_TOKEN.toLowerCase()}/`;
-  const index = lower.indexOf(token);
-  if (index >= 0) {
-    return normalized.slice(index + token.length);
+  for (const tokenValue of IMAGE_ROOT_TOKENS) {
+    const token = `/${tokenValue.toLowerCase()}/`;
+    const index = lower.indexOf(token);
+    if (index >= 0) {
+      return normalized.slice(index + token.length);
+    }
   }
   const parts = normalized.split("/").filter(Boolean);
   return parts.slice(-2).join("/");
@@ -255,21 +333,30 @@ function buildIndex() {
           candidates.sort((a, b) => b.key.length - a.key.length);
           model = candidates[0];
         } else {
-          const fallbackName = generationBaseName(record);
-          const fallbackModelKey = normalizeKey(fallbackName);
-          const fallbackId = `${brandKey}:${fallbackModelKey}`;
-          model = {
-            id: fallbackId,
-            name: fallbackName,
-            years: record.years,
-            brand: record.brand,
-            brandKey,
-            key: fallbackModelKey,
-            generations: [],
-            representativeImage: null,
-          };
-          brand.models.push(model);
-          modelMap.set(fallbackId, model);
+          const scored = brand.models
+            .map((item) => ({ item, score: scoreModelForGeneration(item, record) }))
+            .filter((entry) => entry.score > 0)
+            .sort((a, b) => b.score - a.score);
+
+          if (scored.length > 0 && scored[0].score >= 40) {
+            model = scored[0].item;
+          } else {
+            const fallbackName = generationBaseName(record);
+            const fallbackModelKey = normalizeKey(fallbackName);
+            const fallbackId = `${brandKey}:${fallbackModelKey}`;
+            model = {
+              id: fallbackId,
+              name: fallbackName,
+              years: record.years,
+              brand: record.brand,
+              brandKey,
+              key: fallbackModelKey,
+              generations: [],
+              representativeImage: null,
+            };
+            brand.models.push(model);
+            modelMap.set(fallbackId, model);
+          }
         }
       }
     }
@@ -375,7 +462,7 @@ export function getUltimateSpecsImageSrc(image: UltimateSpecsImage | null) {
     const cleanPath = image.local.startsWith('/') ? image.local.slice(1) : image.local;
     
     // Retornamos la ruta hacia la carpeta public/ultimatespecs
-    return `/ultimatespecs/${encodeURI(cleanPath)}`;
+    return buildAssetUrl(`/ultimatespecs/${encodeURI(cleanPath)}`);
   }
   if (image.url) {
     return image.url;

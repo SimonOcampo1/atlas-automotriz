@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { BRAND_COUNTRY_BY_SLUG } from "@/lib/brand-country-map";
-import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY } from "@/lib/country-data";
+import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY, getFlagSrc } from "@/lib/country-data";
 
 type SortOption = "name-asc" | "name-desc";
 
@@ -254,7 +254,7 @@ export function TierGallery({ logos }: Props) {
               <div className="flex items-center gap-3">
                 {group.country && group.country.code !== UNKNOWN_COUNTRY.code ? (
                   <img
-                    src={`/flags/SVG/${group.country.code}.svg`}
+                    src={getFlagSrc(group.country.code)}
                     alt=""
                     className="h-5 w-5 rounded-sm"
                   />

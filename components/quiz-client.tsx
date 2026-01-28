@@ -16,7 +16,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import type { Logo } from "@/lib/logos";
 import type { TierMeta } from "@/lib/logo-tiers";
 import { BRAND_COUNTRY_BY_SLUG } from "@/lib/brand-country-map";
-import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY } from "@/lib/country-data";
+import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY, getFlagSrc } from "@/lib/country-data";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Trophy } from "lucide-react";
 
 type Mode = "multiple" | "typed" | "country";
@@ -386,7 +386,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                     >
                       {option.code && option.code !== UNKNOWN_COUNTRY.code ? (
                         <img
-                          src={`/flags/SVG/${option.code}.svg`}
+                          src={getFlagSrc(option.code)}
                           alt={`Bandera de ${option.label}`}
                           className="h-6 w-9 rounded-sm border border-border/60 object-cover"
                           loading="lazy"

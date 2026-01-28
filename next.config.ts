@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const assetBaseUrl = process.env.NEXT_PUBLIC_ASSET_BASE_URL?.replace(/\/+$/g, "");
+
 const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
@@ -26,6 +28,29 @@ const nextConfig: NextConfig = {
       // Exclusiones generales de seguridad para otras imágenes pesadas
       '**/*.map',
     ],
+  },
+  async rewrites() {
+    if (!assetBaseUrl) {
+      return [];
+    }
+    return [
+      {
+        source: "/flags/:path*",
+        destination: `${assetBaseUrl}/flags/:path*`,
+      },
+      {
+        source: "/car-logos-dataset/logos/:path*",
+        destination: `${assetBaseUrl}/car-logos-dataset/logos/:path*`,
+      },
+      {
+        source: "/car-logos-dataset/local-logos/:path*",
+        destination: `${assetBaseUrl}/car-logos-dataset/local-logos/:path*`,
+      },
+      {
+        source: "/ultimatespecs/:path*",
+        destination: `${assetBaseUrl}/ultimatespecs/:path*`,
+      },
+    ];
   },
 };
 
