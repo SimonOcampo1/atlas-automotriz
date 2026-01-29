@@ -106,6 +106,16 @@ function getServerBaseUrl() {
   return "http://localhost:3000";
 }
 
+function getServerOrigin() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/g, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
+
 function getServerAssetUrl(path: string) {
   const assetUrl = buildAssetUrl(path);
   if (/^https?:\/\//i.test(assetUrl)) {
@@ -117,16 +127,32 @@ function getServerAssetUrl(path: string) {
 }
 
 async function readJson<T>(urlPath: string): Promise<T> {
+  const fallbackUrl = new URL(urlPath, getServerOrigin()).toString();
+  const primaryUrl = getServerAssetUrl(urlPath);
   try {
-    const response = await fetch(getServerAssetUrl(urlPath), {
+    const response = await fetch(primaryUrl, {
       cache: "force-cache",
       next: { revalidate: 60 * 60 },
     });
-    if (!response.ok) {
-      console.warn(`[WARN] No se pudo cargar JSON (${response.status}): ${urlPath}`);
+    if (response.ok) {
+      return (await response.json()) as T;
+    }
+
+    if (primaryUrl !== fallbackUrl) {
+      const fallbackResponse = await fetch(fallbackUrl, {
+        cache: "force-cache",
+        next: { revalidate: 60 * 60 },
+      });
+      if (fallbackResponse.ok) {
+        return (await fallbackResponse.json()) as T;
+      }
+      console.warn(
+        `[WARN] No se pudo cargar JSON (${response.status}/${fallbackResponse.status}): ${urlPath}`
+      );
       return [] as unknown as T;
     }
-    return (await response.json()) as T;
+    console.warn(`[WARN] No se pudo cargar JSON (${response.status}): ${urlPath}`);
+    return [] as unknown as T;
   } catch (error) {
     console.error(`[ERROR] Fallo leyendo ${urlPath}:`, error);
     return [] as unknown as T;

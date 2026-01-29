@@ -454,6 +454,16 @@ function getServerBaseUrl() {
   return "http://localhost:3000";
 }
 
+function getServerOrigin() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/g, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
+
 function getServerAssetUrl(path: string) {
   const assetUrl = buildAssetUrl(path);
   if (/^https?:\/\//i.test(assetUrl)) {
@@ -505,15 +515,37 @@ function resolveLocalImagePath(brand: string, value?: string | null) {
 
 async function loadRecords(): Promise<RawRecord[]> {
   try {
-    const response = await fetch(getServerAssetUrl("/ultimatespecs_complete_db.jsonl"), {
+    const urlPath = "/ultimatespecs_complete_db.jsonl";
+    const primaryUrl = getServerAssetUrl(urlPath);
+    const fallbackUrl = new URL(urlPath, getServerOrigin()).toString();
+
+    const response = await fetch(primaryUrl, {
       cache: "force-cache",
       next: { revalidate: 60 * 60 },
     });
-    if (!response.ok) {
+
+    let raw: string | null = null;
+
+    if (response.ok) {
+      raw = await response.text();
+    } else if (primaryUrl !== fallbackUrl) {
+      const fallbackResponse = await fetch(fallbackUrl, {
+        cache: "force-cache",
+        next: { revalidate: 60 * 60 },
+      });
+      if (fallbackResponse.ok) {
+        raw = await fallbackResponse.text();
+      } else {
+        console.warn(
+          `[WARN] No se pudo cargar la DB (${response.status}/${fallbackResponse.status}). Retornando vacío.`
+        );
+        return [];
+      }
+    } else {
       console.warn(`[WARN] No se pudo cargar la DB (${response.status}). Retornando vacío.`);
       return [];
     }
-    const raw = await response.text();
+
     const lines = raw.split(/\r?\n/).filter(Boolean);
     const records: RawRecord[] = [];
     for (const line of lines) {
@@ -585,16 +617,36 @@ async function buildIndex() {
     if (!model) {
       const brand = brandMap.get(brandKey);
       if (brand) {
-        const fallbackKey = generationBaseKey(record);
-        const candidates = brand.models.filter((item) => fallbackKey.includes(item.key));
-        if (candidates.length > 0) {
-          candidates.sort((a, b) => b.key.length - a.key.length);
-          model = candidates[0];
+        const urlPath = "/ultimatespecs_complete_db.jsonl";
+        const primaryUrl = getServerAssetUrl(urlPath);
+        const fallbackUrl = new URL(urlPath, getServerOrigin()).toString();
+
+        const response = await fetch(primaryUrl, {
+          cache: "force-cache",
+          next: { revalidate: 60 * 60 },
+        });
+
+        let data: string | null = null;
+
+        if (response.ok) {
+          data = await response.text();
+        } else if (primaryUrl !== fallbackUrl) {
+          const fallbackResponse = await fetch(fallbackUrl, {
+            cache: "force-cache",
+            next: { revalidate: 60 * 60 },
+          });
+          if (fallbackResponse.ok) {
+            data = await fallbackResponse.text();
+          } else {
+            console.warn(
+              `[WARN] No se pudo cargar JSONL (${response.status}/${fallbackResponse.status})`
+            );
+            return [];
+          }
         } else {
-          const scored = brand.models
-            .map((item) => ({ item, score: scoreModelForGeneration(item, record) }))
-            .filter((entry) => entry.score > 0)
-            .sort((a, b) => b.score - a.score);
+          console.warn(`[WARN] No se pudo cargar JSONL (${response.status})`);
+          return [];
+        }
 
           if (scored.length > 0 && scored[0].score >= 40) {
             model = scored[0].item;
