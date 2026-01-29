@@ -617,58 +617,32 @@ async function buildIndex() {
     if (!model) {
       const brand = brandMap.get(brandKey);
       if (brand) {
-        const urlPath = "/ultimatespecs_complete_db.jsonl";
-        const primaryUrl = getServerAssetUrl(urlPath);
-        const fallbackUrl = new URL(urlPath, getServerOrigin()).toString();
+        const scored = brand.models
+          .map((item) => ({ item, score: scoreModelForGeneration(item, record) }))
+          .filter((entry) => entry.score > 0)
+          .sort((a, b) => b.score - a.score);
 
-        const response = await fetch(primaryUrl, {
-          cache: "force-cache",
-          next: { revalidate: 60 * 60 },
-        });
-
-        let data: string | null = null;
-
-        if (response.ok) {
-          data = await response.text();
-        } else if (primaryUrl !== fallbackUrl) {
-          const fallbackResponse = await fetch(fallbackUrl, {
-            cache: "force-cache",
-            next: { revalidate: 60 * 60 },
-          });
-          if (fallbackResponse.ok) {
-            data = await fallbackResponse.text();
-          } else {
-            console.warn(
-              `[WARN] No se pudo cargar JSONL (${response.status}/${fallbackResponse.status})`
-            );
-            return [];
-          }
+        if (scored.length > 0 && scored[0].score >= 40) {
+          model = scored[0].item;
         } else {
-          console.warn(`[WARN] No se pudo cargar JSONL (${response.status})`);
-          return [];
+          const fallbackName = generationBaseName(record);
+          const fallbackModelKey = normalizeKey(fallbackName);
+          const fallbackId = `${brandKey}:${fallbackModelKey}`;
+          model = {
+            id: fallbackId,
+            name: fallbackName,
+            years: record.years,
+            brand: record.brand,
+            brandKey,
+            key: fallbackModelKey,
+            generations: [],
+            representativeImage: null,
+            source: "generation",
+          };
+          brand.models.push(model);
+          modelMap.set(fallbackId, model);
         }
-
-          if (scored.length > 0 && scored[0].score >= 40) {
-            model = scored[0].item;
-          } else {
-            const fallbackName = generationBaseName(record);
-            const fallbackModelKey = normalizeKey(fallbackName);
-            const fallbackId = `${brandKey}:${fallbackModelKey}`;
-            model = {
-              id: fallbackId,
-              name: fallbackName,
-              years: record.years,
-              brand: record.brand,
-              brandKey,
-              key: fallbackModelKey,
-              generations: [],
-              representativeImage: null,
-              source: "generation",
-            };
-            brand.models.push(model);
-            modelMap.set(fallbackId, model);
-          }
-        }
+      }
       }
     }
     if (!model) {
