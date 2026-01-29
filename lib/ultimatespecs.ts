@@ -932,11 +932,17 @@ export function getUltimateSpecsImageSrc(image: UltimateSpecsImage | null) {
     // Nos aseguramos de que no tenga barra inicial duplicada
     const cleanPath = image.local.startsWith('/') ? image.local.slice(1) : image.local;
     
+    const publicPath = `/ultimatespecs/${encodeURI(cleanPath)}`;
+    const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", cleanPath);
+    const exists = fs.existsSync(absolutePath);
+    if (!exists && image.url) {
+      return image.url;
+    }
     // Retornamos la ruta hacia la carpeta public/ultimatespecs
     if (getAssetBaseUrl() && process.env.NODE_ENV !== "production") {
-      return `/ultimatespecs/${encodeURI(cleanPath)}`;
+      return publicPath;
     }
-    return buildAssetUrl(`/ultimatespecs/${encodeURI(cleanPath)}`);
+    return buildAssetUrl(publicPath);
   }
   if (image.url) {
     return image.url;
