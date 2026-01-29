@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildAssetUrl, getAssetBaseUrl } from "@/lib/assets";
 
+const ENABLE_LOCAL_FS = process.env.NODE_ENV !== "production";
+
 export type UltimateSpecsImage = {
   local: string | null;
   url: string | null;
@@ -70,6 +72,10 @@ function buildBrandFolderMap() {
   }
   const root = path.join(process.cwd(), "public", "ultimatespecs");
   const map = new Map<string, string>();
+  if (!ENABLE_LOCAL_FS) {
+    cachedBrandFolderMap = map;
+    return map;
+  }
   try {
     const entries = fs.readdirSync(root, { withFileTypes: true });
     for (const entry of entries) {
@@ -96,6 +102,9 @@ function getBrandFolder(brandName: string) {
 function getBrandImages(brandName: string) {
   if (!cachedBrandImages) {
     cachedBrandImages = new Map();
+  }
+  if (!ENABLE_LOCAL_FS) {
+    return [];
   }
   const brandFolder = getBrandFolder(brandName);
   const cached = cachedBrandImages.get(brandFolder);
@@ -537,6 +546,9 @@ function generationNameFromFile(fileName: string) {
 }
 
 function applyLocalImageFallback(models: Iterable<UltimateSpecsModel>) {
+  if (!ENABLE_LOCAL_FS) {
+    return;
+  }
   for (const model of models) {
     for (const generation of model.generations) {
       if (generation.image.local) {
@@ -595,6 +607,9 @@ function resolveLocalImagePath(brand: string, value?: string | null) {
   const normalized = normalizeLocalImagePath(value);
   if (!normalized) {
     return null;
+  }
+  if (!ENABLE_LOCAL_FS) {
+    return normalized;
   }
   if (getAssetBaseUrl()) {
     return normalized;
@@ -799,6 +814,9 @@ function buildIndex() {
   }
 
   for (const model of modelMap.values()) {
+    if (!ENABLE_LOCAL_FS) {
+      continue;
+    }
     if (model.generations.length > 0) {
       continue;
     }
@@ -933,10 +951,12 @@ export function getUltimateSpecsImageSrc(image: UltimateSpecsImage | null) {
     const cleanPath = image.local.startsWith('/') ? image.local.slice(1) : image.local;
     
     const publicPath = `/ultimatespecs/${encodeURI(cleanPath)}`;
-    const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", cleanPath);
-    const exists = fs.existsSync(absolutePath);
-    if (!exists && image.url) {
-      return image.url;
+    if (ENABLE_LOCAL_FS) {
+      const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", cleanPath);
+      const exists = fs.existsSync(absolutePath);
+      if (!exists && image.url) {
+        return image.url;
+      }
     }
     // Retornamos la ruta hacia la carpeta public/ultimatespecs
     if (getAssetBaseUrl() && process.env.NODE_ENV !== "production") {
