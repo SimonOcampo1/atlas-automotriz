@@ -14,9 +14,6 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingExcludes: {
     '*': [
-      // 1. Ultimatespecs: Solo tiene carpetas de fotos, se puede excluir entero.
-      './public/ultimatespecs/**/*',
-      
       // 2. Banderas: Solo tiene fotos, se puede excluir entero.
       './public/flags/**/*',
 
