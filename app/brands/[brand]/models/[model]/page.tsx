@@ -17,7 +17,7 @@ export default async function ModelGenerationsPage({
   params: Promise<{ brand: string; model: string }>;
 }) {
   const { brand, model } = await params;
-  const brandData = getUltimateSpecsBrandByKey(brand);
+  const brandData = await getUltimateSpecsBrandByKey(brand);
 
   if (!brandData) {
     notFound();

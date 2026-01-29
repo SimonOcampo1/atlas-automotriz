@@ -11,7 +11,7 @@ export default async function ModelQuizPlayPage({
   params: Promise<{ brand: string }>;
 }) {
   const { brand } = await params;
-  const brandData = getUltimateSpecsBrandByKey(brand);
+  const brandData = await getUltimateSpecsBrandByKey(brand);
 
   if (!brandData) {
     notFound();

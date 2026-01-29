@@ -1,10 +1,6 @@
 import "server-only";
 
-import fs from "node:fs";
-import path from "node:path";
-import { buildAssetUrl, getAssetBaseUrl } from "@/lib/assets";
-
-const ENABLE_LOCAL_FS = process.env.NODE_ENV !== "production";
+import { buildAssetUrl } from "@/lib/assets";
 
 export type UltimateSpecsImage = {
   local: string | null;
@@ -49,12 +45,9 @@ type RawRecord = {
 };
 
 const IMAGE_ROOT_TOKENS = ["ultimatespecs_images", "ultimatespecs"];
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
-
 let cachedIndex: UltimateSpecsBrand[] | null = null;
 let cachedBrandMap: Map<string, UltimateSpecsBrand> | null = null;
-let cachedBrandFolderMap: Map<string, string> | null = null;
-let cachedBrandImages: Map<string, string[]> | null = null;
+let cachedIndexPromise: Promise<void> | null = null;
 
 function normalizeKey(value: string) {
   return value
@@ -66,61 +59,8 @@ function normalizeKey(value: string) {
     .trim();
 }
 
-function buildBrandFolderMap() {
-  if (cachedBrandFolderMap) {
-    return cachedBrandFolderMap;
-  }
-  const root = path.join(process.cwd(), "public", "ultimatespecs");
-  const map = new Map<string, string>();
-  if (!ENABLE_LOCAL_FS) {
-    cachedBrandFolderMap = map;
-    return map;
-  }
-  try {
-    const entries = fs.readdirSync(root, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) {
-        continue;
-      }
-      const dirName = entry.name;
-      const normalized = normalizeKey(dirName.replace(/_/g, " "));
-      map.set(normalized, dirName);
-    }
-  } catch (error) {
-    console.warn("[WARN] No se pudo leer carpeta ultimatespecs:", error);
-  }
-  cachedBrandFolderMap = map;
-  return map;
-}
-
 function getBrandFolder(brandName: string) {
-  const map = buildBrandFolderMap();
-  const normalized = normalizeKey(brandName);
-  return map.get(normalized) ?? brandName.replace(/\s+/g, "_");
-}
-
-function getBrandImages(brandName: string) {
-  if (!cachedBrandImages) {
-    cachedBrandImages = new Map();
-  }
-  if (!ENABLE_LOCAL_FS) {
-    return [];
-  }
-  const brandFolder = getBrandFolder(brandName);
-  const cached = cachedBrandImages.get(brandFolder);
-  if (cached) {
-    return cached;
-  }
-  const folderPath = path.join(process.cwd(), "public", "ultimatespecs", brandFolder);
-  let files: string[] = [];
-  try {
-    files = fs.readdirSync(folderPath)
-      .filter((file) => IMAGE_EXTENSIONS.has(path.extname(file).toLowerCase()));
-  } catch {
-    files = [];
-  }
-  cachedBrandImages.set(brandFolder, files);
-  return files;
+  return brandName.replace(/[\s-]+/g, "_");
 }
 
 function normalizeBrandKey(brand: string) {
@@ -504,76 +444,24 @@ function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
   return score;
 }
 
-function scoreImageForGeneration(model: UltimateSpecsModel, generation: UltimateSpecsGeneration, fileName: string) {
-  const fileBase = fileName.replace(/\.[^/.]+$/, "");
-  const fileTokens = new Set(tokenize(fileBase));
-  const genTokens = new Set(tokenize(generation.name));
-  const aliasTokens = (MODEL_ALIAS_MAP[model.brandKey]?.[model.key] ?? []).flatMap(tokenize);
-  const modelTokens = new Set([...tokenize(model.name), ...tokenize(model.key), ...aliasTokens]);
-
-  const modelOverlap = countOverlap(fileTokens, modelTokens);
-  if (modelOverlap === 0) {
-    return 0;
+function getServerBaseUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/g, "");
   }
-
-  const overlap = countOverlap(fileTokens, genTokens);
-  let score = overlap * 10 + modelOverlap * 20;
-
-  const normalizedFile = normalizeKey(fileBase);
-  if (normalizedFile.includes(model.key)) {
-    score += 25;
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
   }
-
-  const overridePatterns = MODEL_GENERATION_OVERRIDES[model.brandKey]?.[model.key] ?? [];
-  if (overridePatterns.length > 0) {
-    for (const pattern of overridePatterns) {
-      const normalizedPattern = normalizeKey(pattern);
-      if (normalizedFile.includes(normalizedPattern)) {
-        score += 30;
-        break;
-      }
-    }
-  }
-
-  return score;
+  return "http://localhost:3000";
 }
 
-function generationNameFromFile(fileName: string) {
-  let base = fileName.replace(/\.[^/.]+$/, "");
-  base = base.replace(/_/g, " ").replace(/\s+/g, " ").trim();
-  base = base.replace(/\b[a-f0-9]{8,}\b$/i, "").trim();
-  return base;
-}
-
-function applyLocalImageFallback(models: Iterable<UltimateSpecsModel>) {
-  if (!ENABLE_LOCAL_FS) {
-    return;
+function getServerAssetUrl(path: string) {
+  const assetUrl = buildAssetUrl(path);
+  if (/^https?:\/\//i.test(assetUrl)) {
+    return assetUrl;
   }
-  for (const model of models) {
-    for (const generation of model.generations) {
-      if (generation.image.local) {
-        continue;
-      }
-      const files = getBrandImages(model.brand);
-      if (files.length === 0) {
-        continue;
-      }
-      let best: { file: string; score: number } | null = null;
-      for (const file of files) {
-        const score = scoreImageForGeneration(model, generation, file);
-        if (score <= 0) {
-          continue;
-        }
-        if (!best || score > best.score) {
-          best = { file, score };
-        }
-      }
-      if (best) {
-        const brandFolder = getBrandFolder(model.brand);
-        generation.image.local = `${brandFolder}/${best.file}`;
-      }
-    }
-  }
+  const base = getServerBaseUrl();
+  const normalized = assetUrl.startsWith("/") ? assetUrl : `/${assetUrl}`;
+  return `${base}${normalized}`;
 }
 
 function parseYears(value: string) {
@@ -608,51 +496,24 @@ function resolveLocalImagePath(brand: string, value?: string | null) {
   if (!normalized) {
     return null;
   }
-  if (!ENABLE_LOCAL_FS) {
-    return normalized;
-  }
-  if (getAssetBaseUrl()) {
+  if (normalized.includes("/")) {
     return normalized;
   }
   const brandFolder = getBrandFolder(brand);
-  const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", normalized);
-  if (fs.existsSync(absolutePath)) {
-    return normalized;
-  }
-  const fallbackPath = path.join(process.cwd(), "public", "ultimatespecs", brandFolder, path.basename(normalized));
-  if (fs.existsSync(fallbackPath)) {
-    return `${brandFolder}/${path.basename(normalized)}`;
-  }
-  return null;
+  return `${brandFolder}/${normalized}`;
 }
 
-function loadRecords(): RawRecord[] {
+async function loadRecords(): Promise<RawRecord[]> {
   try {
-    const filename = "ultimatespecs_complete_db.jsonl";
-    
-    // Lista de posibles lugares donde puede estar el archivo
-    const possiblePaths = [
-      path.join(process.cwd(), "public", filename),
-      path.join(process.cwd(), filename),
-      path.join(process.cwd(), "web", "public", filename),
-      path.join(process.cwd(), "..", filename)
-    ];
-
-    let foundPath = "";
-    
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        foundPath = p;
-        break;
-      }
-    }
-
-    if (!foundPath) {
-      console.warn(`[WARN] No se encontró la DB en ninguna ruta probable. Retornando vacío para NO ROMPER el build.`);
+    const response = await fetch(getServerAssetUrl("/ultimatespecs_complete_db.jsonl"), {
+      cache: "force-cache",
+      next: { revalidate: 60 * 60 },
+    });
+    if (!response.ok) {
+      console.warn(`[WARN] No se pudo cargar la DB (${response.status}). Retornando vacío.`);
       return [];
     }
-
-    const raw = fs.readFileSync(foundPath, "utf-8");
+    const raw = await response.text();
     const lines = raw.split(/\r?\n/).filter(Boolean);
     const records: RawRecord[] = [];
     for (const line of lines) {
@@ -669,8 +530,8 @@ function loadRecords(): RawRecord[] {
   }
 }
 
-function buildIndex() {
-  const records = loadRecords();
+async function buildIndex() {
+  const records = await loadRecords();
   const brandMap = new Map<string, UltimateSpecsBrand>();
   const modelMap = new Map<string, UltimateSpecsModel>();
   const generationMap = new Map<string, RawRecord[]>();
@@ -814,61 +675,6 @@ function buildIndex() {
   }
 
   for (const model of modelMap.values()) {
-    if (!ENABLE_LOCAL_FS) {
-      continue;
-    }
-    if (model.generations.length > 0) {
-      continue;
-    }
-    const files = getBrandImages(model.brand);
-    if (files.length === 0) {
-      continue;
-    }
-    const matchedFiles = files
-      .map((file) => {
-        const score = scoreImageForGeneration(
-          model,
-          {
-            id: "seed",
-            name: model.name,
-            years: model.years,
-            image: { local: null, url: null },
-            modelKey: model.key,
-            brandKey: model.brandKey,
-          },
-          file
-        );
-        return { file, score };
-      })
-      .filter((entry) => entry.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 12);
-
-    if (matchedFiles.length === 0) {
-      continue;
-    }
-
-    const brandFolder = getBrandFolder(model.brand);
-    for (const match of matchedFiles) {
-      const name = generationNameFromFile(match.file);
-      const generation: UltimateSpecsGeneration = {
-        id: `${model.id}:${normalizeKey(name)}:${hashString(match.file)}`,
-        name,
-        years: model.years,
-        image: {
-          local: `${brandFolder}/${match.file}`,
-          url: null,
-        },
-        modelKey: model.key,
-        brandKey: model.brandKey,
-      };
-      addGeneration(model, generation);
-    }
-  }
-
-  applyLocalImageFallback(modelMap.values());
-
-  for (const model of modelMap.values()) {
     const candidates = model.generations.filter(
       (gen) => gen.image.local || gen.image.url
     );
@@ -905,25 +711,29 @@ function buildIndex() {
   cachedBrandMap = brandMap;
 }
 
-function ensureIndex() {
-  if (!cachedIndex || !cachedBrandMap) {
-    buildIndex();
+async function ensureIndex() {
+  if (cachedIndex && cachedBrandMap) {
+    return;
   }
+  if (!cachedIndexPromise) {
+    cachedIndexPromise = buildIndex();
+  }
+  await cachedIndexPromise;
 }
 
-export function getUltimateSpecsBrands() {
-  ensureIndex();
+export async function getUltimateSpecsBrands() {
+  await ensureIndex();
   return cachedIndex ?? [];
 }
 
-export function getUltimateSpecsBrandByKey(brandKey: string) {
-  ensureIndex();
+export async function getUltimateSpecsBrandByKey(brandKey: string) {
+  await ensureIndex();
   const key = normalizeBrandKey(brandKey);
   return cachedBrandMap?.get(key) ?? null;
 }
 
-export function getBrandKeyForName(brandName: string) {
-  ensureIndex();
+export async function getBrandKeyForName(brandName: string) {
+  await ensureIndex();
   const key = normalizeBrandKey(brandName);
   if (cachedBrandMap?.has(key)) {
     return key;
@@ -931,8 +741,9 @@ export function getBrandKeyForName(brandName: string) {
   return null;
 }
 
-export function getBrandsWithModels() {
-  return getUltimateSpecsBrands().filter((brand) => brand.models.length > 0);
+export async function getBrandsWithModels() {
+  const brands = await getUltimateSpecsBrands();
+  return brands.filter((brand) => brand.models.length > 0);
 }
 
 // =====================================================================
@@ -951,17 +762,6 @@ export function getUltimateSpecsImageSrc(image: UltimateSpecsImage | null) {
     const cleanPath = image.local.startsWith('/') ? image.local.slice(1) : image.local;
     
     const publicPath = `/ultimatespecs/${encodeURI(cleanPath)}`;
-    if (ENABLE_LOCAL_FS) {
-      const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", cleanPath);
-      const exists = fs.existsSync(absolutePath);
-      if (!exists && image.url) {
-        return image.url;
-      }
-    }
-    // Retornamos la ruta hacia la carpeta public/ultimatespecs
-    if (getAssetBaseUrl() && process.env.NODE_ENV !== "production") {
-      return publicPath;
-    }
     return buildAssetUrl(publicPath);
   }
   if (image.url) {

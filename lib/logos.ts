@@ -1,7 +1,5 @@
 import "server-only";
 
-import fs from "node:fs";
-import path from "node:path";
 import { buildAssetUrl } from "@/lib/assets";
 
 export type LogoSize = "thumb" | "optimized" | "original";
@@ -33,14 +31,8 @@ type LocalLogo = {
   fileName: string;
 };
 
-// Rutas del sistema de archivos (para leer el JSON)
-const DATASET_ROOT = path.join(
-  process.cwd(),
-  "public",
-  "car-logos-dataset"
-);
-const LOGOS_DATA_PATH = path.join(DATASET_ROOT, "logos", "data.json");
-const LOCAL_LOGOS_PATH = path.join(DATASET_ROOT, "local-logos", "metadata.json");
+const LOGOS_DATA_URL = "/car-logos-dataset/logos/data.json";
+const LOCAL_LOGOS_URL = "/car-logos-dataset/local-logos/metadata.json";
 
 const EXCLUDED_SLUGS = new Set([
   "audi-sport",
@@ -104,26 +96,39 @@ function isExcludedLogo(logo: { slug: string; name: string }) {
   return false;
 }
 
-// CORRECCIÓN: Try/Catch para evitar errores de Build si falta el archivo
-function readJson<T>(filePath: string): T {
+function getServerBaseUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/g, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
+
+function getServerAssetUrl(path: string) {
+  const assetUrl = buildAssetUrl(path);
+  if (/^https?:\/\//i.test(assetUrl)) {
+    return assetUrl;
+  }
+  const base = getServerBaseUrl();
+  const normalized = assetUrl.startsWith("/") ? assetUrl : `/${assetUrl}`;
+  return `${base}${normalized}`;
+}
+
+async function readJson<T>(urlPath: string): Promise<T> {
   try {
-    // Intentamos buscar el archivo en varias rutas por si Vercel lo movió
-    let targetPath = filePath;
-    if (!fs.existsSync(targetPath)) {
-      // Intento alternativo subiendo un nivel (común en Vercel)
-      const altPath = path.join(process.cwd(), "..", "public", "car-logos-dataset", path.basename(path.dirname(filePath)), path.basename(filePath));
-      if (fs.existsSync(altPath)) {
-        targetPath = altPath;
-      } else {
-        // Si no existe, retornamos array vacío para no romper el build
-        console.warn(`[WARN] No se encontró JSON en: ${filePath}`);
-        return [] as unknown as T;
-      }
+    const response = await fetch(getServerAssetUrl(urlPath), {
+      cache: "force-cache",
+      next: { revalidate: 60 * 60 },
+    });
+    if (!response.ok) {
+      console.warn(`[WARN] No se pudo cargar JSON (${response.status}): ${urlPath}`);
+      return [] as unknown as T;
     }
-    const raw = fs.readFileSync(targetPath, "utf-8");
-    return JSON.parse(raw) as T;
+    return (await response.json()) as T;
   } catch (error) {
-    console.error(`[ERROR] Fallo leyendo ${filePath}:`, error);
+    console.error(`[ERROR] Fallo leyendo ${urlPath}:`, error);
     return [] as unknown as T;
   }
 }
@@ -145,9 +150,11 @@ function normalizeDatasetPath(value: string) {
   return `${basePath}/${cleaned}`;
 }
 
-export function getAllLogos(): Logo[] {
-  const dataset = readJson<DatasetLogo[]>(LOGOS_DATA_PATH);
-  const locals = readJson<LocalLogo[]>(LOCAL_LOGOS_PATH);
+export async function getAllLogos(): Promise<Logo[]> {
+  const [dataset, locals] = await Promise.all([
+    readJson<DatasetLogo[]>(LOGOS_DATA_URL),
+    readJson<LocalLogo[]>(LOCAL_LOGOS_URL),
+  ]);
 
   // Verificación de seguridad por si readJson devolvió algo que no es array
   const safeDataset = Array.isArray(dataset) ? dataset : [];

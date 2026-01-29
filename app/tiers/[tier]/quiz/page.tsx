@@ -23,7 +23,7 @@ export default async function QuizPage({
     notFound();
   }
 
-  const logos = getAllLogos();
+  const logos = await getAllLogos();
   const tiers = groupLogosByTier(logos);
   const tierId = tier as LogoTierId;
   const meta = getTierMeta(tierId);

@@ -27,7 +27,7 @@ export default async function TierPage({
     notFound();
   }
 
-  const logos = getAllLogos();
+  const logos = await getAllLogos();
   const tiers = groupLogosByTier(logos);
   const tierId = tier as LogoTierId;
   const meta = getTierMeta(tierId);

@@ -4,23 +4,25 @@ import { HeroSection } from "@/components/hero-section";
 import { getAllLogos } from "@/lib/logos";
 import { getBrandKeyForName, getBrandsWithModels } from "@/lib/ultimatespecs";
 
-export default function Home() {
-  const logos = getAllLogos();
+export default async function Home() {
+  const logos = await getAllLogos();
   
   // CORRECCIÓN DE EMERGENCIA: Try/Catch para evitar que el build explote
   let brandsWithModels: any[] = [];
   try {
-    brandsWithModels = getBrandsWithModels();
+    brandsWithModels = await getBrandsWithModels();
   } catch (error) {
     console.error("Error cargando marcas (ignorando para build):", error);
     brandsWithModels = [];
   }
 
   const brandKeys = new Set(brandsWithModels.map((brand) => brand.key));
+  const logoKeyPairs = await Promise.all(
+    logos.map(async (logo) => [logo, await getBrandKeyForName(logo.name)] as const)
+  );
   const brandModelLinks = Object.fromEntries(
-    logos
-      .map((logo) => {
-        const key = getBrandKeyForName(logo.name);
+    logoKeyPairs
+      .map(([logo, key]) => {
         if (!key || !brandKeys.has(key)) {
           return null;
         }

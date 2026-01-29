@@ -9,13 +9,15 @@ import { getAllLogos } from "@/lib/logos";
 import { getBrandKeyForName, getBrandsWithModels } from "@/lib/ultimatespecs";
 import { ArrowLeft } from "lucide-react";
 
-export default function LearnPage() {
-  const logos = getAllLogos();
-  const brandsWithModels = getBrandsWithModels();
+export default async function LearnPage() {
+  const logos = await getAllLogos();
+  const brandsWithModels = await getBrandsWithModels();
   const brandMap = new Map(brandsWithModels.map((brand) => [brand.key, brand]));
-  const modelBrands = logos
-    .map((logo) => {
-      const key = getBrandKeyForName(logo.name);
+  const logoKeyPairs = await Promise.all(
+    logos.map(async (logo) => [logo, await getBrandKeyForName(logo.name)] as const)
+  );
+  const modelBrands = logoKeyPairs
+    .map(([logo, key]) => {
       if (!key) {
         return null;
       }
@@ -31,9 +33,8 @@ export default function LearnPage() {
     })
     .filter(Boolean) as Array<{ key: string; name: string; modelCount: number }>;
   const logoByBrandKey = Object.fromEntries(
-    logos
-      .map((logo) => {
-        const key = getBrandKeyForName(logo.name);
+    logoKeyPairs
+      .map(([logo, key]) => {
         if (!key || !brandMap.has(key)) {
           return null;
         }
