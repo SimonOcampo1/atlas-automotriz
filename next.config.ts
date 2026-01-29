@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
-const assetBaseUrl = process.env.NEXT_PUBLIC_ASSET_BASE_URL?.replace(/\/+$/g, "");
+const assetMode = process.env.NEXT_PUBLIC_ASSET_MODE ?? "local";
+const assetBaseUrl = assetMode === "cdn"
+  ? process.env.NEXT_PUBLIC_ASSET_BASE_URL?.replace(/\/+$/g, "")
+  : "";
 
 const nextConfig: NextConfig = {
   typescript: {

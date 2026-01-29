@@ -1,10 +1,14 @@
 const RAW_BASE_URL = process.env.NEXT_PUBLIC_ASSET_BASE_URL ?? "";
+const ASSET_MODE = process.env.NEXT_PUBLIC_ASSET_MODE ?? "local";
 
 function normalizeBaseUrl(value: string) {
   return value.replace(/\/+$/g, "");
 }
 
 export function getAssetBaseUrl() {
+  if (ASSET_MODE !== "cdn") {
+    return "";
+  }
   return normalizeBaseUrl(RAW_BASE_URL);
 }
 
