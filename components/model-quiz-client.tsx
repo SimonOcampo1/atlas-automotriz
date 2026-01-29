@@ -18,6 +18,7 @@ export type ModelQuizItem = {
   name: string;
   imageSrc: string | null;
   years: string;
+  generationImages?: string[];
 };
 
 type Option = {
@@ -84,6 +85,7 @@ export function ModelQuizClient({
   const [startedAt, setStartedAt] = React.useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = React.useState(0);
   const [bestRun, setBestRun] = React.useState<BestRun | null>(null);
+  const [carouselIndex, setCarouselIndex] = React.useState(0);
 
   const current = questions[index];
   const total = questions.length;
@@ -125,6 +127,10 @@ export function ModelQuizClient({
     setOptions(choices);
     setSelectedOption(null);
   }, [current, eligible]);
+
+  React.useEffect(() => {
+    setCarouselIndex(0);
+  }, [current?.id]);
 
   React.useEffect(() => {
     if (!autoStart || eligible.length < 4) {
@@ -203,6 +209,33 @@ export function ModelQuizClient({
     }
   };
 
+  const galleryImages = React.useMemo(() => {
+    if (!current) {
+      return [] as string[];
+    }
+    const sources = (current.generationImages ?? []).filter(Boolean);
+    if (current.imageSrc) {
+      sources.unshift(current.imageSrc);
+    }
+    return Array.from(new Set(sources));
+  }, [current]);
+
+  const activeImage = galleryImages[carouselIndex] ?? current?.imageSrc ?? null;
+  const canNavigateGallery = galleryImages.length > 1;
+  const handlePrevImage = () => {
+    if (!canNavigateGallery) {
+      return;
+    }
+    setCarouselIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+  };
+
+  const handleNextImage = () => {
+    if (!canNavigateGallery) {
+      return;
+    }
+    setCarouselIndex((prev) => (prev + 1) % galleryImages.length);
+  };
+
   if (eligible.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-10 text-center text-sm text-muted-foreground">
@@ -266,9 +299,9 @@ export function ModelQuizClient({
         <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
           <div className="flex flex-col items-center gap-4">
             <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent">
-              {current.imageSrc ? (
+              {activeImage ? (
                 <img
-                  src={current.imageSrc}
+                  src={activeImage}
                   alt={current.name}
                   className="max-h-[40vh] w-full rounded-2xl object-cover"
                 />
@@ -276,6 +309,34 @@ export function ModelQuizClient({
                 <span className="text-xs text-muted-foreground">Imagen no disponible</span>
               )}
             </div>
+
+            {galleryImages.length > 0 && (
+              <div className="flex w-full items-center justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handlePrevImage}
+                  disabled={!canNavigateGallery}
+                  className="border-border/60 bg-background/80"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-xs text-muted-foreground">
+                  Imagen {Math.min(carouselIndex + 1, galleryImages.length)} de {galleryImages.length}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleNextImage}
+                  disabled={!canNavigateGallery}
+                  className="border-border/60 bg-background/80"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
 
             <div className="grid w-full gap-3 sm:grid-cols-2">
               {options.map((option) => {

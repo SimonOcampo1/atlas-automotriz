@@ -17,12 +17,22 @@ export default async function ModelQuizPlayPage({
     notFound();
   }
 
-  const models = brandData.models.map((model) => ({
-    id: model.id,
-    name: model.name,
-    years: model.years,
-    imageSrc: getUltimateSpecsImageSrc(model.representativeImage),
-  }));
+  const models = brandData.models.map((model) => {
+    const imageSrc = getUltimateSpecsImageSrc(model.representativeImage);
+    const generationImages = model.generations
+      .map((generation) => getUltimateSpecsImageSrc(generation.image))
+      .filter((value): value is string => Boolean(value));
+    if (imageSrc && !generationImages.includes(imageSrc)) {
+      generationImages.unshift(imageSrc);
+    }
+    return {
+      id: model.id,
+      name: model.name,
+      years: model.years,
+      imageSrc,
+      generationImages: Array.from(new Set(generationImages)),
+    };
+  });
 
   return (
     <ModelQuizClient
