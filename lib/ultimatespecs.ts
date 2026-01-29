@@ -2,7 +2,7 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
-import { buildAssetUrl } from "@/lib/assets";
+import { buildAssetUrl, getAssetBaseUrl } from "@/lib/assets";
 
 export type UltimateSpecsImage = {
   local: string | null;
@@ -27,6 +27,7 @@ export type UltimateSpecsModel = {
   key: string;
   generations: UltimateSpecsGeneration[];
   representativeImage: UltimateSpecsImage | null;
+  source: "model" | "generation";
 };
 
 export type UltimateSpecsBrand = {
@@ -195,6 +196,36 @@ function tokenize(value: string) {
     .filter(Boolean);
 }
 
+function hashString(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+function buildGenerationId(modelId: string, record: RawRecord) {
+  const base = normalizeKey(record.name);
+  const source = record.url || record.local_image || `${record.name}-${record.years}`;
+  return `${modelId}:${base}:${hashString(source)}`;
+}
+
+function addGeneration(model: UltimateSpecsModel, generation: UltimateSpecsGeneration) {
+  const normalizedName = normalizeKey(generation.name);
+  const existingIndex = model.generations.findIndex((item) => (
+    normalizeKey(item.name) === normalizedName && item.years === generation.years
+  ));
+  if (existingIndex >= 0) {
+    const existing = model.generations[existingIndex];
+    if (!existing.image.local && (generation.image.local || generation.image.url)) {
+      model.generations[existingIndex] = generation;
+    }
+    return;
+  }
+  model.generations.push(generation);
+}
+
 const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
   "alfa-romeo": {
     "145-146": ["145", "146"],
@@ -202,12 +233,12 @@ const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
     "junior": ["junior"],
   },
   alpina: {
-    "x3": ["x3"],
-    "x4": ["x4"],
-    "x7": ["x7"],
+    "x3": ["x3", "g01", "xd3", "f25", "xd3 lci"],
+    "x4": ["x4", "g02", "xd4"],
+    "x7": ["x7", "g07", "xb7", "xb7 lci", "g07 lci"],
   },
   audi: {
-    "concept-cars": ["concept"],
+    "concept-cars": ["concept", "nuvolari", "avantissimo", "avus", "asso di picche"],
     "80": ["80"],
     "90": ["90"],
     "200": ["200"],
@@ -301,7 +332,7 @@ const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
     "x7": ["x7"],
   },
   audi: {
-    "concept-cars": ["concept"],
+    "concept-cars": ["concept", "nuvolari", "avantissimo", "avus", "asso di picche"],
     "80": ["80"],
     "90": ["90"],
     "200": ["200"],
@@ -498,10 +529,17 @@ function scoreImageForGeneration(model: UltimateSpecsModel, generation: Ultimate
   return score;
 }
 
+function generationNameFromFile(fileName: string) {
+  let base = fileName.replace(/\.[^/.]+$/, "");
+  base = base.replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  base = base.replace(/\b[a-f0-9]{8,}\b$/i, "").trim();
+  return base;
+}
+
 function applyLocalImageFallback(models: Iterable<UltimateSpecsModel>) {
   for (const model of models) {
     for (const generation of model.generations) {
-      if (generation.image.local || generation.image.url) {
+      if (generation.image.local) {
         continue;
       }
       const files = getBrandImages(model.brand);
@@ -557,6 +595,9 @@ function resolveLocalImagePath(brand: string, value?: string | null) {
   const normalized = normalizeLocalImagePath(value);
   if (!normalized) {
     return null;
+  }
+  if (getAssetBaseUrl()) {
+    return normalized;
   }
   const brandFolder = getBrandFolder(brand);
   const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", normalized);
@@ -641,6 +682,7 @@ function buildIndex() {
           key: modelKey,
           generations: [],
           representativeImage: null,
+          source: "model",
         };
         modelMap.set(modelId, model);
         brand.models.push(model);
@@ -693,6 +735,7 @@ function buildIndex() {
               key: fallbackModelKey,
               generations: [],
               representativeImage: null,
+              source: "generation",
             };
             brand.models.push(model);
             modelMap.set(fallbackId, model);
@@ -705,7 +748,7 @@ function buildIndex() {
     }
 
     const generation: UltimateSpecsGeneration = {
-      id: `${modelId}:${normalizeKey(record.name)}`,
+      id: buildGenerationId(modelId, record),
       name: record.name,
       years: record.years,
       image: {
@@ -716,7 +759,7 @@ function buildIndex() {
       brandKey,
     };
 
-    model.generations.push(generation);
+    addGeneration(model, generation);
   }
 
   for (const model of modelMap.values()) {
@@ -741,7 +784,7 @@ function buildIndex() {
     for (const record of matches) {
       const modelKey = model.key;
       const generation: UltimateSpecsGeneration = {
-        id: `${model.id}:${normalizeKey(record.name)}`,
+        id: buildGenerationId(model.id, record),
         name: record.name,
         years: record.years,
         image: {
@@ -751,7 +794,57 @@ function buildIndex() {
         modelKey,
         brandKey: model.brandKey,
       };
-      model.generations.push(generation);
+      addGeneration(model, generation);
+    }
+  }
+
+  for (const model of modelMap.values()) {
+    if (model.generations.length > 0) {
+      continue;
+    }
+    const files = getBrandImages(model.brand);
+    if (files.length === 0) {
+      continue;
+    }
+    const matchedFiles = files
+      .map((file) => {
+        const score = scoreImageForGeneration(
+          model,
+          {
+            id: "seed",
+            name: model.name,
+            years: model.years,
+            image: { local: null, url: null },
+            modelKey: model.key,
+            brandKey: model.brandKey,
+          },
+          file
+        );
+        return { file, score };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12);
+
+    if (matchedFiles.length === 0) {
+      continue;
+    }
+
+    const brandFolder = getBrandFolder(model.brand);
+    for (const match of matchedFiles) {
+      const name = generationNameFromFile(match.file);
+      const generation: UltimateSpecsGeneration = {
+        id: `${model.id}:${normalizeKey(name)}:${hashString(match.file)}`,
+        name,
+        years: model.years,
+        image: {
+          local: `${brandFolder}/${match.file}`,
+          url: null,
+        },
+        modelKey: model.key,
+        brandKey: model.brandKey,
+      };
+      addGeneration(model, generation);
     }
   }
 
@@ -840,6 +933,9 @@ export function getUltimateSpecsImageSrc(image: UltimateSpecsImage | null) {
     const cleanPath = image.local.startsWith('/') ? image.local.slice(1) : image.local;
     
     // Retornamos la ruta hacia la carpeta public/ultimatespecs
+    if (getAssetBaseUrl() && process.env.NODE_ENV !== "production") {
+      return `/ultimatespecs/${encodeURI(cleanPath)}`;
+    }
     return buildAssetUrl(`/ultimatespecs/${encodeURI(cleanPath)}`);
   }
   if (image.url) {

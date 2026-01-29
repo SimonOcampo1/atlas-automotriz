@@ -23,7 +23,15 @@ export default async function BrandModelsPage({
     notFound();
   }
 
-  const items = brandData.models.map((model) => {
+  const modelKeys = new Set(
+    brandData.models
+      .filter((model) => model.source === "model")
+      .map((model) => model.key)
+  );
+  const visibleModels = brandData.models.filter((model) => (
+    model.source === "model" || !modelKeys.has(model.key)
+  ));
+  const items = visibleModels.map((model) => {
     const hasGenerations = model.generations.length > 0;
     return {
       id: model.id,
@@ -65,7 +73,7 @@ export default async function BrandModelsPage({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{brandData.models.length} modelos</Badge>
+              <Badge variant="secondary">{visibleModels.length} modelos</Badge>
             </div>
           </div>
         </div>
