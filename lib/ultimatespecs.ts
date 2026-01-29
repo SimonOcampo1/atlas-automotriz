@@ -643,7 +643,6 @@ async function buildIndex() {
           modelMap.set(fallbackId, model);
         }
       }
-      }
     }
     if (!model) {
       continue;
