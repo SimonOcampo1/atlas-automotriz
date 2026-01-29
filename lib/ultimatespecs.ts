@@ -468,7 +468,8 @@ function scoreImageForGeneration(model: UltimateSpecsModel, generation: Ultimate
   const fileBase = fileName.replace(/\.[^/.]+$/, "");
   const fileTokens = new Set(tokenize(fileBase));
   const genTokens = new Set(tokenize(generation.name));
-  const modelTokens = new Set([...tokenize(model.name), ...tokenize(model.key)]);
+  const aliasTokens = (MODEL_ALIAS_MAP[model.brandKey]?.[model.key] ?? []).flatMap(tokenize);
+  const modelTokens = new Set([...tokenize(model.name), ...tokenize(model.key), ...aliasTokens]);
 
   const modelOverlap = countOverlap(fileTokens, modelTokens);
   if (modelOverlap === 0) {
@@ -483,7 +484,46 @@ function scoreImageForGeneration(model: UltimateSpecsModel, generation: Ultimate
     score += 25;
   }
 
+  const overridePatterns = MODEL_GENERATION_OVERRIDES[model.brandKey]?.[model.key] ?? [];
+  if (overridePatterns.length > 0) {
+    for (const pattern of overridePatterns) {
+      const normalizedPattern = normalizeKey(pattern);
+      if (normalizedFile.includes(normalizedPattern)) {
+        score += 30;
+        break;
+      }
+    }
+  }
+
   return score;
+}
+
+function applyLocalImageFallback(models: Iterable<UltimateSpecsModel>) {
+  for (const model of models) {
+    for (const generation of model.generations) {
+      if (generation.image.local || generation.image.url) {
+        continue;
+      }
+      const files = getBrandImages(model.brand);
+      if (files.length === 0) {
+        continue;
+      }
+      let best: { file: string; score: number } | null = null;
+      for (const file of files) {
+        const score = scoreImageForGeneration(model, generation, file);
+        if (score <= 0) {
+          continue;
+        }
+        if (!best || score > best.score) {
+          best = { file, score };
+        }
+      }
+      if (best) {
+        const brandFolder = getBrandFolder(model.brand);
+        generation.image.local = `${brandFolder}/${best.file}`;
+      }
+    }
+  }
 }
 
 function parseYears(value: string) {
@@ -511,6 +551,23 @@ function normalizeLocalImagePath(value?: string | null) {
   }
   const parts = normalized.split("/").filter(Boolean);
   return parts.slice(-2).join("/");
+}
+
+function resolveLocalImagePath(brand: string, value?: string | null) {
+  const normalized = normalizeLocalImagePath(value);
+  if (!normalized) {
+    return null;
+  }
+  const brandFolder = getBrandFolder(brand);
+  const absolutePath = path.join(process.cwd(), "public", "ultimatespecs", normalized);
+  if (fs.existsSync(absolutePath)) {
+    return normalized;
+  }
+  const fallbackPath = path.join(process.cwd(), "public", "ultimatespecs", brandFolder, path.basename(normalized));
+  if (fs.existsSync(fallbackPath)) {
+    return `${brandFolder}/${path.basename(normalized)}`;
+  }
+  return null;
 }
 
 function loadRecords(): RawRecord[] {
@@ -652,7 +709,7 @@ function buildIndex() {
       name: record.name,
       years: record.years,
       image: {
-        local: normalizeLocalImagePath(record.local_image),
+        local: resolveLocalImagePath(record.brand, record.local_image),
         url: record.image_url ?? null,
       },
       modelKey,
@@ -660,32 +717,6 @@ function buildIndex() {
     };
 
     model.generations.push(generation);
-  }
-
-  for (const model of modelMap.values()) {
-    for (const generation of model.generations) {
-      if (generation.image.local || generation.image.url) {
-        continue;
-      }
-      const files = getBrandImages(model.brand);
-      if (files.length === 0) {
-        continue;
-      }
-      let best: { file: string; score: number } | null = null;
-      for (const file of files) {
-        const score = scoreImageForGeneration(model, generation, file);
-        if (score <= 0) {
-          continue;
-        }
-        if (!best || score > best.score) {
-          best = { file, score };
-        }
-      }
-      if (best) {
-        const brandFolder = getBrandFolder(model.brand);
-        generation.image.local = `${brandFolder}/${best.file}`;
-      }
-    }
   }
 
   for (const model of modelMap.values()) {
@@ -714,7 +745,7 @@ function buildIndex() {
         name: record.name,
         years: record.years,
         image: {
-          local: normalizeLocalImagePath(record.local_image),
+          local: resolveLocalImagePath(record.brand, record.local_image),
           url: record.image_url ?? null,
         },
         modelKey,
@@ -723,6 +754,8 @@ function buildIndex() {
       model.generations.push(generation);
     }
   }
+
+  applyLocalImageFallback(modelMap.values());
 
   for (const model of modelMap.values()) {
     const candidates = model.generations.filter(
