@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SpecCardGrid } from "@/components/spec-card-grid";
+import { ModelCatalog } from "@/components/model-catalog";
 import {
   getUltimateSpecsBrandByKey,
   getUltimateSpecsImageSrc,
@@ -81,7 +81,7 @@ export default async function BrandModelsPage({
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
         <Separator />
-        <SpecCardGrid
+        <ModelCatalog
           items={items}
           emptyLabel="Esta marca no tiene modelos disponibles."
         />
