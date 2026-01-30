@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
-const assetMode = process.env.NEXT_PUBLIC_ASSET_MODE ?? "local";
+const assetMode = (process.env.NEXT_PUBLIC_ASSET_MODE ?? "local").trim().toLowerCase();
 const assetBaseUrl = assetMode === "cdn"
-  ? process.env.NEXT_PUBLIC_ASSET_BASE_URL?.replace(/\/+$/g, "")
+  ? (process.env.NEXT_PUBLIC_ASSET_BASE_URL ?? "").trim().replace(/\/+$/g, "")
   : "";
 
 const nextConfig: NextConfig = {

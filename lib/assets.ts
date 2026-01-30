@@ -1,5 +1,5 @@
-const RAW_BASE_URL = process.env.NEXT_PUBLIC_ASSET_BASE_URL ?? "";
-const ASSET_MODE = process.env.NEXT_PUBLIC_ASSET_MODE ?? "local";
+const RAW_BASE_URL = (process.env.NEXT_PUBLIC_ASSET_BASE_URL ?? "").trim();
+const ASSET_MODE = (process.env.NEXT_PUBLIC_ASSET_MODE ?? "local").trim().toLowerCase();
 
 function normalizeBaseUrl(value: string) {
   return value.replace(/\/+$/g, "");
