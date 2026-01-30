@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   outputFileTracingExcludes: {
     '*': [
       // 2. Banderas: Solo tiene fotos, se puede excluir entero.
@@ -49,6 +46,10 @@ const nextConfig: NextConfig = {
       {
         source: "/ultimatespecs/:path*",
         destination: `${assetBaseUrl}/ultimatespecs/:path*`,
+      },
+      {
+        source: "/ultimatespecs_complete_db.jsonl",
+        destination: `${assetBaseUrl}/ultimatespecs_complete_db.jsonl`,
       },
     ];
   },
