@@ -1,37 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Atlas Automotriz
 
-## Getting Started
+Atlas Automotriz es una web interactiva para explorar marcas, logos y modelos de autos con datos y assets centralizados en un CDN (Supabase Storage).
 
-First, run the development server:
+### Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 16 (App Router)
+- React 19
+- TypeScript 5
+- Tailwind CSS + shadcn/ui
+- Supabase Storage (assets públicos)
+
+### Objetivos
+
+- Explorar marcas y modelos con imágenes.
+- Quizzes y navegación por categorías.
+- Assets servidos por CDN para evitar límites de almacenamiento en Vercel.
+
+## Configuración de assets (Supabase)
+
+El proyecto carga TODO desde Supabase cuando `NEXT_PUBLIC_ASSET_MODE=cdn`.
+
+Variables de entorno requeridas:
+
+- `NEXT_PUBLIC_ASSET_MODE=cdn`
+- `NEXT_PUBLIC_ASSET_BASE_URL=https://<PROJECT_REF>.supabase.co/storage/v1/object/public/assets`
+
+En Supabase, el bucket público `assets` debe contener esta estructura:
+
+```
+/ultimatespecs_complete_db.jsonl
+/ultimatespecs/...
+/car-logos-dataset/...
+/flags/...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Desarrollo local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Si no usas CDN en local, puedes colocar assets en `public/` y usar:
 
-## Learn More
+```
+NEXT_PUBLIC_ASSET_MODE=local
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1) Configura las variables en Vercel.
+2) Redeploy del proyecto.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+- `npm run dev` — servidor local
+- `npm run build` — build de producción
+- `npm run lint` — lint
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Repo de assets
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Se recomienda mantener un repositorio separado únicamente con los assets públicos (para libre acceso). La app consume esos assets desde el CDN configurado en `NEXT_PUBLIC_ASSET_BASE_URL`.
  
