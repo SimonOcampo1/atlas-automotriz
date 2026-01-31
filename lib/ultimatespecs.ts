@@ -432,6 +432,115 @@ const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
   },
 };
 
+const MANUAL_MODEL_GENERATION_LINKS: Record<string, Record<string, string[]>> = {
+  "alfa-romeo": {
+    "145-146": ["alfa romeo 145", "alfa romeo 146"],
+  },
+  alpina: {
+    "x3": ["alpina g01 xd3", "alpina f25 xd3 lci", "alpina f25 xd3"],
+    "x4": ["alpina g02 xd4"],
+    "x7": ["alpina g07 xb7 lci", "alpina g07 xb7"],
+  },
+  byd: {
+    "tang-eu-market": ["byd tang 2024", "byd tang 2022"],
+  },
+  ds: {
+    "ds-4": ["ds nº4", "ds n°4", "ds n4"],
+    "ds-8": ["ds nº8", "ds n°8", "ds n8"],
+  },
+  fiat: {
+    "500e-3-1": ["fiat 500e 3+1"],
+    "doblo": [
+      "fiat doblò 2024 multicab l2",
+      "fiat doblò 2024 van l1",
+      "fiat doblò 2024 van l2",
+      "fiat doblò 2022",
+      "fiat doblò 2010",
+      "fiat doblò cargo 2022",
+      "fiat doblò cargo 2015",
+      "fiat doblò 2015",
+      "fiat doblò 2005",
+      "fiat doblò 2001",
+    ],
+  },
+  kia: {
+    "carnival-sedona": ["kia carnival 2021", "kia carnival ii", "kia carnival i"],
+    "optima-magentis": [
+      "kia optima 2019",
+      "kia optima 2019 sportswagon",
+      "kia optima (jf)",
+      "kia optima sportswagon",
+      "kia optima",
+      "kia magentis ii",
+      "kia magentis i",
+    ],
+    "sephia-mentor-shuma": ["kia mentor", "kia sephia ii", "kia shuma i", "kia sephia i"],
+  },
+  mercury: {
+    "cougar": ["mercury cougar 1st-gen convertible", "mercury cougar 1st-gen hardtop coupe"],
+  },
+  mg: {
+    "hs-ehs": ["mg hs 2024", "mg hs 2023", "mg hs"],
+    "zs-crossover": ["mg zs 2025", "mg zs 2022", "mg zs ev 2022", "mg zs ev 2020"],
+  },
+  nissan: {
+    "200sx-silvia": [
+      "nissan 200 sx s15",
+      "nissan 200 sx s14",
+      "nissan 200 sx s13",
+      "nissan silvia s12",
+    ],
+    "z-series-fairlady-z": [
+      "nissan 370z",
+      "nissan 370z 2013",
+      "nissan 370z 2013 roadster",
+      "nissan 370z 2015",
+      "nissan 370z 2015 roadster",
+      "nissan 370z roadster",
+      "nissan 350 z",
+      "nissan 350 z roadster",
+      "nissan 300 zx z32",
+      "nissan 300 zx z31",
+    ],
+  },
+  opel: {
+    "agila": ["opel agila b", "opel agila a"],
+    "meriva": ["opel meriva b", "opel meriva a"],
+  },
+  peugeot: {
+    "206": ["peugeot 206+"],
+    "207": ["peugeot 207+"],
+    "407": ["peugeot 407 coupe", "peugeot 407"],
+    "504": ["peugeot 504 break", "peugeot 504 coupe", "peugeot 504 cabriolet", "peugeot 504"],
+  },
+  saturn: {
+    "l-series": ["saturn l 2003", "saturn l wagon 2003", "saturn l", "saturn l wagon"],
+  },
+  subaru: {
+    "crosstrek-xv": ["subaru crosstrek 2024", "subaru xv 2 2021", "subaru xv 2018", "subaru xv"],
+  },
+  volvo: {
+    "120-amazon": ["volvo 122", "volvo 123"],
+    "140-164": ["volvo 164", "volvo 142", "volvo 144"],
+    "200-series": [
+      "volvo 262",
+      "volvo 262 c bertone",
+      "volvo 264",
+      "volvo 265",
+      "volvo 240",
+      "volvo 240 sedan",
+      "volvo 240 wagon",
+      "volvo 242",
+      "volvo 244",
+      "volvo 245",
+    ],
+    "300-series": ["volvo 360", "volvo 340"],
+    "s40": ["volvo s40 ii", "volvo s40 i"],
+    "v70": ["volvo v70 iii", "volvo v70 iii restyling", "volvo v70 ii", "volvo v70 i", "volvo v70 xc"],
+    "xc70": ["volvo xc70 ii", "volvo xc70 ii restyling", "volvo xc70"],
+  },
+};
+
 function countOverlap(a: Set<string>, b: Set<string>) {
   let count = 0;
   for (const token of a) {
@@ -771,6 +880,42 @@ async function buildIndex() {
           url: record.image_url ?? null,
         },
         modelKey,
+        brandKey: model.brandKey,
+      };
+      addGeneration(model, generation);
+    }
+  }
+
+  for (const model of modelMap.values()) {
+    const manualPatterns = MANUAL_MODEL_GENERATION_LINKS[model.brandKey]?.[model.key];
+    if (!manualPatterns || manualPatterns.length === 0) {
+      continue;
+    }
+    const generations = generationMap.get(model.brandKey) ?? [];
+    if (generations.length === 0) {
+      continue;
+    }
+
+    const normalizedPatterns = manualPatterns.map((pattern) => normalizeKey(pattern));
+    const existing = new Set(model.generations.map((gen) => normalizeKey(gen.name)));
+    const matches = generations.filter((record) => {
+      const normalizedName = normalizeKey(record.name);
+      if (existing.has(normalizedName)) {
+        return false;
+      }
+      return normalizedPatterns.some((pattern) => normalizedName.includes(pattern));
+    });
+
+    for (const record of matches) {
+      const generation: UltimateSpecsGeneration = {
+        id: buildGenerationId(model.id, record),
+        name: record.name,
+        years: record.years,
+        image: {
+          local: resolveLocalImagePath(record.brand, record.local_image),
+          url: record.image_url ?? null,
+        },
+        modelKey: model.key,
         brandKey: model.brandKey,
       };
       addGeneration(model, generation);
