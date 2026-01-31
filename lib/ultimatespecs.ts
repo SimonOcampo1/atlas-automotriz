@@ -145,6 +145,10 @@ function tokenize(value: string) {
     .filter(Boolean);
 }
 
+function getNumericTokens(tokens: string[]) {
+  return tokens.filter((token) => /\d/.test(token));
+}
+
 function splitCompositeParts(value: string) {
   return value
     .split(/\s*\/\s*|\s*&\s*|\s+-\s+|\s+–\s+/)
