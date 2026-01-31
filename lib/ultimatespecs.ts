@@ -378,57 +378,59 @@ const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
     "sl-class": ["r232", "r231", "r230", "r129", "r107", "w113", "w198", "w121", "z232", "sl"],
   },
   mercury: {
-    "cougar": ["cougar"],
+    "cougar": ["cougar", "1st-gen"],
   },
   mg: {
+    "hs-ehs": ["hs", "ehs"],
+    "zs-crossover": ["zs", "zs ev"],
     "zs": ["zs"],
-      "cougar": ["cougar", "1st-gen"],
+  },
   nissan: {
-    "200sx": ["200 sx", "200sx", "s15", "s14", "s13", "s12", "silvia"],
-      "hs-ehs": ["hs", "ehs"],
-      "zs-crossover": ["zs", "zs ev"],
-      "zs": ["zs"],
+    "200sx": ["200 sx", "200sx", "silvia"],
+    "200sx-silvia": ["200 sx", "200sx", "silvia"],
+    "z-series": ["370z", "350 z", "300 zx", "300zx"],
+    "z-series-fairlady-z": ["370z", "350 z", "300 zx", "300zx", "fairlady", "roadster"],
   },
   opel: {
-      "200sx": ["200 sx", "200sx", "silvia"],
-      "200sx-silvia": ["200 sx", "200sx", "silvia"],
-      "z-series": ["370z", "350 z", "300 zx", "300zx"],
-      "z-series-fairlady-z": ["370z", "350 z", "300 zx", "300zx", "fairlady", "roadster"],
+    "agila": ["agila"],
+    "meriva": ["meriva"],
+  },
   peugeot: {
+    "206": ["206+", "206 sw"],
+    "207": ["207+"],
     "407": ["407"],
-      "agila": ["agila"],
-      "meriva": ["meriva"],
+    "504": ["504"],
+    "4007": ["4007"],
+    "rcz": ["rcz"],
+  },
+  saturn: {
+    "l-series": ["l", "l wagon"],
+  },
+  subaru: {
+    "crosstrek-xv": ["crosstrek", "xv"],
+  },
   seat: {
     "exeo": ["exeo"],
-      "206": ["206+", "206 sw"],
-      "207": ["207+"],
+  },
+  suzuki: {
     "sj-samurai": ["samurai", "santana"],
   },
-      "4007": ["4007"],
-      "rcz": ["rcz"],
   volvo: {
-    saturn: {
-      "l-series": ["l", "l wagon"],
-    },
     "120-amazon": ["120", "122", "123", "130", "220", "amazon"],
-      "crosstrek-xv": ["crosstrek", "xv"],
+    "140-164": ["140", "142", "144", "164"],
     "200-series": ["200", "240", "242", "244", "245", "260", "262", "264", "265", "bertone"],
     "300-series": ["300", "340", "360"],
     "400-series": ["440", "460", "480"],
     "900-series": ["940", "960"],
-    "s40": ["s40", "s40 i", "s40 ii"],
-    "v70": ["v70", "v70 i", "v70 ii", "v70 iii", "v70 xc", "restyling"],
+    "s40": ["s40"],
+    "v70": ["v70", "v70 xc", "v70 i", "v70 ii", "v70 iii", "restyling"],
     "xc70": ["xc70", "xc70 ii", "restyling"],
   },
 };
 
-      "200-series": ["200", "240", "242", "244", "245", "260", "262", "264", "265", "bertone"],
-      "300-series": ["300", "340", "360"],
-}
-
 function countOverlap(a: Set<string>, b: Set<string>) {
-      "v70": ["v70", "v70 xc", "v70 i", "v70 ii", "v70 iii", "restyling"],
-      "xc70": ["xc70", "xc70 ii", "restyling"],
+  let count = 0;
+  for (const token of a) {
     if (b.has(token)) {
       count += 1;
     }
