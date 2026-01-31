@@ -145,6 +145,13 @@ function tokenize(value: string) {
     .filter(Boolean);
 }
 
+function splitCompositeParts(value: string) {
+  return value
+    .split(/\s*\/\s*|\s*&\s*|\s+-\s+|\s+–\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function hashString(value: string) {
   let hash = 0;
   for (let i = 0; i < value.length; i += 1) {
@@ -182,15 +189,18 @@ const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
     "junior": ["junior"],
   },
   alpina: {
-    "x3": ["x3", "g01", "xd3", "f25", "xd3 lci"],
-    "x4": ["x4", "g02", "xd4"],
-    "x7": ["x7", "g07", "xb7", "xb7 lci", "g07 lci"],
+    "x3": ["x3", "g01", "xd3", "f25", "xd3 lci", "g01 xd3", "f25 xd3"],
+    "x4": ["x4", "g02", "xd4", "g02 xd4"],
+    "x7": ["x7", "g07", "xb7", "xb7 lci", "g07 lci", "g07 xb7"],
   },
   audi: {
     "concept-cars": ["concept", "nuvolari", "avantissimo", "avus", "asso di picche"],
     "80": ["80"],
     "90": ["90"],
     "200": ["200"],
+  },
+  byd: {
+    "tang-eu-market": ["tang", "tang 2024", "tang 2022"],
   },
   bmw: {
     "z3": ["e36/8", "e36-8", "z3 coupe", "z3 roadster"],
@@ -207,12 +217,23 @@ const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
   },
   ds: {
     "ds-3": ["ds3", "ds 3"],
+    "ds-4": ["n°4", "n4", "ds 4", "nº4", "ds nº4"],
+    "ds-8": ["n°8", "n8", "ds 8", "nº8", "ds nº8"],
+  },
+  fiat: {
+    "500e-3-1": ["500e 3+1"],
+    "doblo": ["doblò", "doblo"],
   },
   ford: {
     "escort-europe": ["escort i", "escort ii", "escort iii", "escort iv", "escort v", "escort vi"],
     "orion": ["orion i", "orion ii", "orion iii"],
     "falcon-australia": ["falcon", "fg", "au", "bf", "el", "xa", "xb", "xr", "xk", "xl"],
     "focus-europe": ["focus", "focus 1", "focus 2", "focus 3", "focus 4"],
+  },
+  kia: {
+    "carnival-sedona": ["carnival", "sedona", "carnival i", "carnival ii", "ka4"],
+    "optima-magentis": ["optima", "magentis", "sportswagon", "jf"],
+    "sephia-mentor-shuma": ["sephia", "mentor", "shuma", "spectra"],
   },
   jeep: {
     "avenger": ["avenger"],
@@ -234,21 +255,36 @@ const MODEL_ALIAS_MAP: Record<string, Record<string, string[]>> = {
     "sl-class": ["r232", "r231", "r230", "r129", "r107", "w113", "w198", "w121", "z232"],
   },
   mercury: {
-    "cougar": ["cougar"],
+    "cougar": ["cougar", "1st-gen", "convertible", "hardtop"],
   },
   mg: {
+    "hs-ehs": ["hs", "ehs", "hs 2024", "hs 2023"],
+    "zs-crossover": ["zs 2025", "zs 2022", "zs ev", "zs 2020", "zs 2019"],
     "zs": ["zs", "zs sedan"],
   },
   nissan: {
     "200sx": ["s15", "s14", "s13", "s12", "silvia"],
+    "200sx-silvia": ["200 sx", "200sx", "silvia", "s15", "s14", "s13", "s12"],
     "z-series": ["370z", "350 z", "300 zx", "300zx", "z34", "z33", "z32", "z31"],
+    "z-series-fairlady-z": ["370z", "350 z", "300 zx", "300zx", "z34", "z33", "z32", "z31", "fairlady", "roadster"],
   },
   opel: {
     "agila": ["agila a", "agila b"],
+    "meriva": ["meriva a", "meriva b"],
   },
   peugeot: {
+    "206": ["206+", "206 sw"],
+    "207": ["207+"],
     "407": ["407 coupe", "407"],
     "504": ["504", "504 coupe", "504 cabriolet", "504 break"],
+    "4007": ["4007"],
+    "rcz": ["rcz", "rcz 2013"],
+  },
+  saturn: {
+    "l-series": ["l", "l wagon", "l 2003"],
+  },
+  subaru: {
+    "crosstrek-xv": ["crosstrek", "xv", "xv 2", "xv 2018", "crosstrek 2024", "xv 2021"],
   },
   seat: {
     "exeo": ["exeo"],
@@ -276,15 +312,18 @@ const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
     "junior": ["junior"],
   },
   alpina: {
-    "x3": ["x3"],
-    "x4": ["x4"],
-    "x7": ["x7"],
+    "x3": ["x3", "g01", "xd3", "f25"],
+    "x4": ["x4", "g02", "xd4"],
+    "x7": ["x7", "g07", "xb7"],
   },
   audi: {
     "concept-cars": ["concept", "nuvolari", "avantissimo", "avus", "asso di picche"],
     "80": ["80"],
     "90": ["90"],
     "200": ["200"],
+  },
+  byd: {
+    "tang-eu-market": ["tang"],
   },
   bmw: {
     "z3": ["e36/8", "e36-8", "e36/7", "z3 coupe", "z3 roadster"],
@@ -301,12 +340,23 @@ const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
   },
   ds: {
     "ds-3": ["ds3", "ds 3"],
+    "ds-4": ["n°4", "n4", "nº4"],
+    "ds-8": ["n°8", "n8", "nº8"],
+  },
+  fiat: {
+    "500e-3-1": ["500e 3+1"],
+    "doblo": ["doblò", "doblo"],
   },
   ford: {
     "escort-europe": ["escort"],
     "orion": ["orion"],
     "falcon-australia": ["falcon", "fg", "au", "bf", "el", "xa", "xb", "xr", "xk", "xl"],
     "focus-europe": ["focus"],
+  },
+  kia: {
+    "carnival-sedona": ["carnival", "sedona"],
+    "optima-magentis": ["optima", "magentis", "sportswagon"],
+    "sephia-mentor-shuma": ["sephia", "mentor", "shuma", "spectra"],
   },
   jeep: {
     "avenger": ["avenger"],
@@ -332,44 +382,53 @@ const MODEL_GENERATION_OVERRIDES: Record<string, Record<string, string[]>> = {
   },
   mg: {
     "zs": ["zs"],
-  },
+      "cougar": ["cougar", "1st-gen"],
   nissan: {
     "200sx": ["200 sx", "200sx", "s15", "s14", "s13", "s12", "silvia"],
-    "z-series": ["370z", "350 z", "300 zx", "300zx", "z34", "z33", "z32", "z31"],
+      "hs-ehs": ["hs", "ehs"],
+      "zs-crossover": ["zs", "zs ev"],
+      "zs": ["zs"],
   },
   opel: {
-    "agila": ["agila"],
-  },
+      "200sx": ["200 sx", "200sx", "silvia"],
+      "200sx-silvia": ["200 sx", "200sx", "silvia"],
+      "z-series": ["370z", "350 z", "300 zx", "300zx"],
+      "z-series-fairlady-z": ["370z", "350 z", "300 zx", "300zx", "fairlady", "roadster"],
   peugeot: {
     "407": ["407"],
-    "504": ["504"],
-  },
+      "agila": ["agila"],
+      "meriva": ["meriva"],
   seat: {
     "exeo": ["exeo"],
-  },
-  suzuki: {
+      "206": ["206+", "206 sw"],
+      "207": ["207+"],
     "sj-samurai": ["samurai", "santana"],
   },
+      "4007": ["4007"],
+      "rcz": ["rcz"],
   volvo: {
+    saturn: {
+      "l-series": ["l", "l wagon"],
+    },
     "120-amazon": ["120", "122", "123", "130", "220", "amazon"],
-    "140-164": ["140", "142", "144", "164"],
-    "200-series": ["240", "242", "244", "245", "260", "264", "265", "200 series"],
-    "300-series": ["340", "360"],
+      "crosstrek-xv": ["crosstrek", "xv"],
+    "200-series": ["200", "240", "242", "244", "245", "260", "262", "264", "265", "bertone"],
+    "300-series": ["300", "340", "360"],
     "400-series": ["440", "460", "480"],
     "900-series": ["940", "960"],
-    "s40": ["s40"],
-    "v70": ["v70", "v70 xc"],
-    "xc70": ["xc70"],
+    "s40": ["s40", "s40 i", "s40 ii"],
+    "v70": ["v70", "v70 i", "v70 ii", "v70 iii", "v70 xc", "restyling"],
+    "xc70": ["xc70", "xc70 ii", "restyling"],
   },
 };
 
-function getNumericTokens(tokens: string[]) {
-  return tokens.filter((token) => /\d/.test(token));
+      "200-series": ["200", "240", "242", "244", "245", "260", "262", "264", "265", "bertone"],
+      "300-series": ["300", "340", "360"],
 }
 
 function countOverlap(a: Set<string>, b: Set<string>) {
-  let count = 0;
-  for (const token of a) {
+      "v70": ["v70", "v70 xc", "v70 i", "v70 ii", "v70 iii", "restyling"],
+      "xc70": ["xc70", "xc70 ii", "restyling"],
     if (b.has(token)) {
       count += 1;
     }
@@ -392,6 +451,8 @@ function isSubset(a: Set<string>, b: Set<string>) {
 function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
   const slugKey = modelKeyFromGenerationRecord(record);
   const nameKey = normalizeKey(record.name);
+  const normalizedName = nameKey;
+  const normalizedSlug = normalizeKey(slugKey);
   const modelKey = model.key;
   const brandKey = model.brandKey;
 
@@ -429,13 +490,24 @@ function scoreModelForGeneration(model: UltimateSpecsModel, record: RawRecord) {
     score += 10;
   }
 
+  const compositeParts = splitCompositeParts(model.name)
+    .map((part) => normalizeKey(part))
+    .filter(Boolean);
+  if (compositeParts.length > 0) {
+    const matchesComposite = compositeParts.some((part) => (
+      part.length > 1 && (normalizedName.includes(part) || normalizedSlug.includes(part))
+    ));
+    if (matchesComposite) {
+      score += 20;
+    }
+  }
+
   const aliases = MODEL_ALIAS_MAP[brandKey]?.[modelKey] ?? [];
   if (aliases.length > 0) {
-    const normalizedName = normalizeKey(record.name);
     for (const alias of aliases) {
       const aliasKey = normalizeKey(alias);
-      if (normalizedName.includes(aliasKey)) {
-        score += 35;
+      if (normalizedName.includes(aliasKey) || normalizedSlug.includes(aliasKey)) {
+        score += 45;
         break;
       }
     }
