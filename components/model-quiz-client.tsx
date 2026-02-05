@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { translate, type Locale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +42,7 @@ type Props = {
   models: ModelQuizItem[];
   initialOpen?: boolean;
   autoStart?: boolean;
+  locale: Locale;
 };
 
 function formatTime(ms: number) {
@@ -68,6 +71,7 @@ export function ModelQuizClient({
   models,
   initialOpen = true,
   autoStart = false,
+  locale,
 }: Props) {
   const eligible = React.useMemo(
     () => models.filter((model) => model.imageSrc),
@@ -239,7 +243,7 @@ export function ModelQuizClient({
   if (eligible.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-10 text-center text-sm text-muted-foreground">
-        No hay modelos con imagen disponible para este quiz.
+        {translate(locale, "empty.noModelsWithImage")}
       </div>
     );
   }
@@ -247,7 +251,7 @@ export function ModelQuizClient({
   if (eligible.length < 4) {
     return (
       <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-10 text-center text-sm text-muted-foreground">
-        Se necesitan al menos 4 modelos con imagen para iniciar el quiz.
+        {translate(locale, "empty.minModelsRequired")}
       </div>
     );
   }
@@ -264,18 +268,26 @@ export function ModelQuizClient({
             >
               <Link href={`/model-quiz/${brandKey}`} className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Volver a modelos
+                {translate(locale, "general.backToModels")}
               </Link>
             </Button>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <LanguageToggle locale={locale} />
+              <ThemeToggle />
+            </div>
           </div>
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
-              Quiz · {brandName}
+              {translate(locale, "quiz.modelQuizTitleShort", { brand: brandName })}
             </h1>
             {questions.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-                <span>Pregunta {index + 1} de {total}</span>
+                <span>
+                  {translate(locale, "quiz.questionCount", {
+                    current: index + 1,
+                    total,
+                  })}
+                </span>
                 <div className="flex items-center gap-4 rounded-full border border-border/60 bg-background/70 px-4 py-2 text-base font-semibold text-foreground sm:text-lg">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -285,7 +297,7 @@ export function ModelQuizClient({
                   <div className="flex items-center gap-2">
                     <span>{completionRate}%</span>
                     <span className="text-xs font-medium text-muted-foreground sm:text-sm">
-                      completado
+                      {translate(locale, "quiz.completedLabel")}
                     </span>
                   </div>
                 </div>
@@ -306,7 +318,9 @@ export function ModelQuizClient({
                   className="max-h-[40vh] w-full rounded-2xl object-cover"
                 />
               ) : (
-                <span className="text-xs text-muted-foreground">Imagen no disponible</span>
+                <span className="text-xs text-muted-foreground">
+                  {translate(locale, "image.unavailable")}
+                </span>
               )}
             </div>
 
@@ -323,7 +337,10 @@ export function ModelQuizClient({
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="text-xs text-muted-foreground">
-                  Imagen {Math.min(carouselIndex + 1, galleryImages.length)} de {galleryImages.length}
+                  {translate(locale, "image.count", {
+                    current: Math.min(carouselIndex + 1, galleryImages.length),
+                    total: galleryImages.length,
+                  })}
                 </div>
                 <Button
                   type="button"
@@ -372,7 +389,7 @@ export function ModelQuizClient({
               className="flex items-center gap-2"
             >
               <ChevronLeft className="h-4 w-4" />
-              Anterior
+              {translate(locale, "quiz.previous")}
             </Button>
 
             <Button
@@ -381,7 +398,7 @@ export function ModelQuizClient({
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
             >
               <Trophy className="h-4 w-4" />
-              Finalizar
+              {translate(locale, "quiz.finish")}
             </Button>
 
             <Button
@@ -390,7 +407,7 @@ export function ModelQuizClient({
               disabled={index === total - 1}
               className="flex items-center gap-2"
             >
-              Siguiente
+              {translate(locale, "quiz.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -400,14 +417,16 @@ export function ModelQuizClient({
       <Dialog open={selectDialogOpen} onOpenChange={setSelectDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Quiz de modelos · {brandName}</DialogTitle>
+            <DialogTitle>
+              {translate(locale, "quiz.modelQuizTitle", { brand: brandName })}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Solo opción múltiple con 4 respuestas por pregunta.
+              {translate(locale, "quiz.onlyMultiplePerQuestion")}
             </p>
             <Button onClick={startQuiz} className="w-full bg-white text-black hover:bg-white/90">
-              Empezar quiz
+              {translate(locale, "quiz.start")}
             </Button>
           </div>
         </DialogContent>
@@ -416,24 +435,26 @@ export function ModelQuizClient({
       <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Resultado del quiz</DialogTitle>
+            <DialogTitle>{translate(locale, "quiz.resultTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Trophy className="h-4 w-4" />
-                Rendimiento
+                {translate(locale, "quiz.performance")}
               </div>
               <p className="text-2xl font-semibold text-foreground">
                 {correctCount}/{total}
               </p>
               <p className="text-sm text-muted-foreground">
-                Precisión: {total > 0 ? Math.round((correctCount / total) * 100) : 0}%
+                {translate(locale, "quiz.accuracy", {
+                  value: total > 0 ? Math.round((correctCount / total) * 100) : 0,
+                })}
               </p>
             </div>
             {bestRun ? (
               <div className="rounded-xl border border-border/60 bg-white p-4 text-sm text-muted-foreground dark:bg-black/30">
-                Mejor registro: {bestRun.accuracy}% · {bestRun.completed}/{bestRun.total} · {formatTime(bestRun.timeMs)}
+                {translate(locale, "quiz.bestRun")}: {bestRun.accuracy}% · {bestRun.completed}/{bestRun.total} · {formatTime(bestRun.timeMs)}
               </div>
             ) : null}
             <div className="flex flex-col gap-2">
@@ -442,10 +463,12 @@ export function ModelQuizClient({
                 className="border-border/60 bg-white/60 text-foreground hover:bg-muted/40"
                 variant="outline"
               >
-                Volver a resultados
+                {translate(locale, "quiz.backToResults")}
               </Button>
               <Button variant="outline" asChild className="border-border/60 bg-white/60 text-foreground hover:bg-muted/40">
-                <Link href="/learn">Volver a aprendizaje</Link>
+                <Link href="/learn">
+                  {translate(locale, "quiz.backToLearning")}
+                </Link>
               </Button>
             </div>
           </div>

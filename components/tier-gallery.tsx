@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import type { Logo, LogoSize } from "@/lib/logos";
+import { translate, type Locale } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { BRAND_COUNTRY_BY_SLUG } from "@/lib/brand-country-map";
-import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY, getFlagSrc } from "@/lib/country-data";
+import { UNKNOWN_COUNTRY, getCountryByCode, getFlagSrc, getUnknownCountry } from "@/lib/country-data";
 
 type SortOption = "name-asc" | "name-desc";
 
@@ -29,6 +30,7 @@ type VisualSizeOption = "small" | "medium" | "large";
 type GroupMode = "letters" | "countries";
 type Props = {
   logos: Logo[];
+  locale: Locale;
 };
 
 // CORRECCIÓN: Ruta directa
@@ -46,7 +48,7 @@ function getSizeClasses(scale: number) {
   return { container: "h-32", image: "max-h-16" };
 }
 
-export function TierGallery({ logos }: Props) {
+export function TierGallery({ logos, locale }: Props) {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<SortOption>("name-asc");
   const [size, setSize] = React.useState<LogoSize>("optimized");
@@ -55,6 +57,7 @@ export function TierGallery({ logos }: Props) {
   const [selected, setSelected] = React.useState<Logo | null>(null);
   const [effectiveColumns, setEffectiveColumns] = React.useState<number>(density);
   const [groupMode, setGroupMode] = React.useState<GroupMode>("letters");
+  const unknownCountry = React.useMemo(() => getUnknownCountry(locale), [locale]);
 
   React.useEffect(() => {
     function handleResize() {
@@ -147,7 +150,7 @@ export function TierGallery({ logos }: Props) {
     }
 
     const items = Array.from(groups.entries()).map(([code, logos]) => {
-      const country = COUNTRY_BY_CODE[code] ?? UNKNOWN_COUNTRY;
+      const country = getCountryByCode(locale)[code] ?? unknownCountry;
       return {
         key: code,
         title: country.name,
@@ -160,7 +163,7 @@ export function TierGallery({ logos }: Props) {
       items.reverse();
     }
     return items;
-  }, [filtered, groupMode, sort]);
+  }, [filtered, groupMode, sort, locale, unknownCountry]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,7 +172,7 @@ export function TierGallery({ logos }: Props) {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por nombre o slug"
+            placeholder={translate(locale, "search.nameOrSlug")}
             className="w-full sm:w-[220px]"
           />
           <button
@@ -180,13 +183,17 @@ export function TierGallery({ logos }: Props) {
               )
             }
             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/60 bg-background/80 text-foreground transition hover:bg-foreground/10"
-            aria-label={
-              sort === "name-asc" ? "Orden ascendente (A-Z)" : "Orden descendente (Z-A)"
-            }
-            title={
-              sort === "name-asc" ? "Orden ascendente (A-Z)" : "Orden descendente (Z-A)"
-            }
-          >
+          aria-label={
+            sort === "name-asc"
+              ? translate(locale, "sort.asc")
+              : translate(locale, "sort.desc")
+          }
+          title={
+            sort === "name-asc"
+              ? translate(locale, "sort.asc")
+              : translate(locale, "sort.desc")
+          }
+        >
             {sort === "name-asc" ? (
               <ArrowUpAZ className="h-4 w-4" />
             ) : (
@@ -197,12 +204,12 @@ export function TierGallery({ logos }: Props) {
 
         <Select value={size} onValueChange={(value) => setSize(value as LogoSize)}>
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Resolución" />
+            <SelectValue placeholder={translate(locale, "filter.resolution")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="thumb">Mini</SelectItem>
-            <SelectItem value="optimized">Optimizado</SelectItem>
-            <SelectItem value="original">Original</SelectItem>
+            <SelectItem value="thumb">{translate(locale, "size.mini")}</SelectItem>
+            <SelectItem value="optimized">{translate(locale, "size.optimized")}</SelectItem>
+            <SelectItem value="original">{translate(locale, "size.original")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -211,12 +218,12 @@ export function TierGallery({ logos }: Props) {
           onValueChange={(value) => setVisualSize(value as VisualSizeOption)}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Tamaño visual" />
+            <SelectValue placeholder={translate(locale, "filter.visualSize")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="small">Pequeño</SelectItem>
-            <SelectItem value="medium">Mediano</SelectItem>
-            <SelectItem value="large">Grande</SelectItem>
+            <SelectItem value="small">{translate(locale, "size.small")}</SelectItem>
+            <SelectItem value="medium">{translate(locale, "size.medium")}</SelectItem>
+            <SelectItem value="large">{translate(locale, "size.large")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -225,24 +232,24 @@ export function TierGallery({ logos }: Props) {
           onValueChange={(value) => setDensity(Number(value) as DensityOption)}
         >
           <SelectTrigger className="hidden w-full sm:inline-flex sm:w-[150px]">
-            <SelectValue placeholder="Columnas" />
+            <SelectValue placeholder={translate(locale, "filter.columns")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="2">2 por fila</SelectItem>
-            <SelectItem value="3">3 por fila</SelectItem>
-            <SelectItem value="4">4 por fila</SelectItem>
-            <SelectItem value="5">5 por fila</SelectItem>
-            <SelectItem value="6">6 por fila</SelectItem>
+            <SelectItem value="2">{translate(locale, "columns.count", { count: 2 })}</SelectItem>
+            <SelectItem value="3">{translate(locale, "columns.count", { count: 3 })}</SelectItem>
+            <SelectItem value="4">{translate(locale, "columns.count", { count: 4 })}</SelectItem>
+            <SelectItem value="5">{translate(locale, "columns.count", { count: 5 })}</SelectItem>
+            <SelectItem value="6">{translate(locale, "columns.count", { count: 6 })}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={groupMode} onValueChange={(value) => setGroupMode(value as GroupMode)}>
           <SelectTrigger className="w-full sm:w-[190px]">
-            <SelectValue placeholder="Agrupar" />
+            <SelectValue placeholder={translate(locale, "filter.group")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="letters">Agrupar por letras</SelectItem>
-            <SelectItem value="countries">Agrupar por países</SelectItem>
+            <SelectItem value="letters">{translate(locale, "filter.groupLetters")}</SelectItem>
+            <SelectItem value="countries">{translate(locale, "filter.groupCountries")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -283,12 +290,12 @@ export function TierGallery({ logos }: Props) {
                           onClick={() => setSelected(logo)}
                           className={`flex w-full items-center justify-center rounded-lg border border-border/60 bg-white shadow-sm transition hover:shadow-md ${classes.container}`}
                         >
-                          <img
-                            src={getImageSrc(logo, size)}
-                            alt={`Logo de ${logo.name}`}
-                            className={`${classes.image} w-auto object-contain`}
-                            loading="lazy"
-                          />
+                <img
+                  src={getImageSrc(logo, size)}
+                  alt={translate(locale, "dialog.logoOf", { name: logo.name })}
+                  className={`${classes.image} w-auto object-contain`}
+                  loading="lazy"
+                />
                         </button>
                         <div className="flex w-full items-center justify-between gap-2">
                           <p className="text-sm font-medium text-foreground">{logo.name}</p>
@@ -307,7 +314,9 @@ export function TierGallery({ logos }: Props) {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {selected ? `Logo de ${selected.name}` : ""}
+              {selected
+                ? translate(locale, "dialog.logoOf", { name: selected.name })
+                : ""}
             </DialogTitle>
           </DialogHeader>
           {selected && (
@@ -316,12 +325,12 @@ export function TierGallery({ logos }: Props) {
               <div className="flex w-full items-center justify-center rounded-2xl bg-white p-6">
                 <img
                   src={getImageSrc(selected, "original")}
-                  alt={`Logo de ${selected.name}`}
+                  alt={translate(locale, "dialog.logoOf", { name: selected.name })}
                   className="max-h-[70vh] w-auto object-contain"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Vista ampliada en tamaño original.
+                {translate(locale, "dialog.originalSizeView")}
               </p>
             </div>
           )}

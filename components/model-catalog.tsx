@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { translate, type Locale } from "@/lib/i18n";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,7 @@ type SortOption = "name-asc" | "name-desc" | "year-asc" | "year-desc";
 type Props = {
   items: SpecCardItem[];
   emptyLabel?: string;
+  locale: Locale;
 };
 
 function getStartYear(value: string) {
@@ -24,7 +26,7 @@ function getStartYear(value: string) {
   return match ? Number(match[0]) : null;
 }
 
-export function ModelCatalog({ items, emptyLabel }: Props) {
+export function ModelCatalog({ items, emptyLabel, locale }: Props) {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<SortOption>("name-asc");
 
@@ -75,26 +77,26 @@ export function ModelCatalog({ items, emptyLabel }: Props) {
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar modelo..."
+          placeholder={translate(locale, "search.model")}
           className="sm:max-w-xs"
         />
         <Select value={sort} onValueChange={(value) => setSort(value as SortOption)}>
           <SelectTrigger className="sm:max-w-xs">
-            <SelectValue placeholder="Ordenar" />
+            <SelectValue placeholder={translate(locale, "sort.label")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="name-asc">A–Z</SelectItem>
             <SelectItem value="name-desc">Z–A</SelectItem>
-            <SelectItem value="year-asc">Año: más antiguo</SelectItem>
-            <SelectItem value="year-desc">Año: más reciente</SelectItem>
+            <SelectItem value="year-asc">{translate(locale, "sort.yearOldest")}</SelectItem>
+            <SelectItem value="year-desc">{translate(locale, "sort.yearNewest")}</SelectItem>
           </SelectContent>
         </Select>
         <Badge variant="secondary" className="w-fit">
-          {filtered.length} resultados
+          {translate(locale, "results.count", { count: filtered.length })}
         </Badge>
       </div>
 
-      <SpecCardGrid items={filtered} emptyLabel={emptyLabel} />
+      <SpecCardGrid items={filtered} emptyLabel={emptyLabel} locale={locale} />
     </section>
   );
 }

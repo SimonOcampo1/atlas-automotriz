@@ -1,4 +1,5 @@
 import { buildAssetUrl } from "@/lib/assets";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
 export type CountryInfo = {
   code: string;
@@ -8,8 +9,37 @@ export type CountryInfo = {
 
 export const UNKNOWN_COUNTRY: CountryInfo = {
   code: "XX",
-  name: "Sin país",
+  name: "Sin pais",
   region: "Otros",
+};
+
+const REGION_EN_MAP: Record<string, string> = {
+  "Africa": "Africa",
+  "África": "Africa",
+  "America Central": "Central America",
+  "América Central": "Central America",
+  "America del Norte": "North America",
+  "América del Norte": "North America",
+  "America del Sur": "South America",
+  "América del Sur": "South America",
+  "Antartida": "Antarctica",
+  "Antártida": "Antarctica",
+  "Asia": "Asia",
+  "Europa": "Europe",
+  "Europa/Asia": "Europe/Asia",
+  "Oceania": "Oceania",
+  "Oceanía": "Oceania",
+  "Otros": "Other",
+  "Other": "Other",
+};
+
+const EN_COUNTRY_OVERRIDES: Record<string, Omit<CountryInfo, "code">> = {
+  "gb-eng": { name: "England", region: "Europe" },
+  "gb-nir": { name: "Northern Ireland", region: "Europe" },
+  "gb-sct": { name: "Scotland", region: "Europe" },
+  "gb-wls": { name: "Wales", region: "Europe" },
+  XK: { name: "Kosovo", region: "Europe" },
+  xk: { name: "Kosovo", region: "Europe" },
 };
 
 export const FLAG_CODES = [
@@ -291,14 +321,21 @@ const COUNTRY_OVERRIDES: Record<string, Omit<CountryInfo, "code">> = {
   ZW: { name: "Zimbabue", region: "África" },
 };
 
-function resolveCountryName(code: string) {
-  const override = COUNTRY_OVERRIDES[code];
-  if (override) {
-    return override.name;
+function resolveCountryName(code: string, locale: Locale) {
+  if (locale === "es") {
+    const override = COUNTRY_OVERRIDES[code];
+    if (override) {
+      return override.name;
+    }
+  } else {
+    const override = EN_COUNTRY_OVERRIDES[code];
+    if (override) {
+      return override.name;
+    }
   }
   const normalized = code.length === 2 ? code.toUpperCase() : code.toUpperCase();
   try {
-    const displayNames = new Intl.DisplayNames(["es"], { type: "region" });
+    const displayNames = new Intl.DisplayNames([locale], { type: "region" });
     const label = displayNames.of(normalized);
     return label ?? code;
   } catch {
@@ -306,26 +343,56 @@ function resolveCountryName(code: string) {
   }
 }
 
-function resolveRegion(code: string) {
+function resolveRegion(code: string, locale: Locale) {
+  if (locale === "en") {
+    const override = EN_COUNTRY_OVERRIDES[code];
+    if (override) {
+      return override.region;
+    }
+  }
   const override = COUNTRY_OVERRIDES[code];
-  return override?.region ?? "Otros";
+  if (override) {
+    if (locale === "en") {
+      return REGION_EN_MAP[override.region] ?? "Other";
+    }
+    return override.region;
+  }
+  return locale === "en" ? "Other" : "Otros";
 }
 
-export const COUNTRIES: CountryInfo[] = FLAG_CODES.map((code) => {
-  return {
+function createCountries(locale: Locale) {
+  return FLAG_CODES.map((code) => ({
     code,
-    name: resolveCountryName(code),
-    region: resolveRegion(code),
-  };
-});
+    name: resolveCountryName(code, locale),
+    region: resolveRegion(code, locale),
+  }));
+}
 
-export const COUNTRY_BY_CODE: Record<string, CountryInfo> = COUNTRIES.reduce(
-  (acc, country) => {
+function createCountryByCode(countries: CountryInfo[]) {
+  return countries.reduce((acc, country) => {
     acc[country.code] = country;
     return acc;
-  },
-  {} as Record<string, CountryInfo>
-);
+  }, {} as Record<string, CountryInfo>);
+}
+
+export const COUNTRIES: CountryInfo[] = createCountries(DEFAULT_LOCALE);
+export const COUNTRY_BY_CODE: Record<string, CountryInfo> = createCountryByCode(COUNTRIES);
+
+export function getUnknownCountry(locale: Locale): CountryInfo {
+  return {
+    code: UNKNOWN_COUNTRY.code,
+    name: locale === "en" ? "No country" : "Sin pais",
+    region: locale === "en" ? "Other" : "Otros",
+  };
+}
+
+export function getCountries(locale: Locale) {
+  return createCountries(locale);
+}
+
+export function getCountryByCode(locale: Locale) {
+  return createCountryByCode(createCountries(locale));
+}
 
 // NUEVO: Helper para garantizar que las banderas carguen desde la URL pública
 export function getFlagSrc(code: string) {

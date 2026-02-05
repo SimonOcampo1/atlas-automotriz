@@ -7,6 +7,8 @@ import type { Group } from "three";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
+import { translate, type Locale } from "@/lib/i18n";
 
 type BoxProps = {
     position: [number, number, number];
@@ -139,9 +141,10 @@ export const Scene = ({ onReady }: SceneProps) => {
 
 type HeroSectionProps = {
     logosCount: number;
+    locale: Locale;
 };
 
-export const HeroSection = ({ logosCount }: HeroSectionProps) => {
+export const HeroSection = ({ logosCount, locale }: HeroSectionProps) => {
     const [canvasVisible, setCanvasVisible] = useState(false);
 
     const handleExploreClick = () => {
@@ -163,33 +166,34 @@ export const HeroSection = ({ logosCount }: HeroSectionProps) => {
             <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8 text-left sm:py-20">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <p className="text-xs uppercase tracking-[0.35em] text-foreground/60">
-                        Por Simón Ocampo
+                        {translate(locale, "hero.byAuthor")}
                     </p>
                     <div className="flex items-center gap-3">
                         <Badge className="border border-border/60 bg-background/80 px-3 py-1 text-sm text-foreground hover:bg-foreground/10">
-                            {logosCount} marcas
+                            {translate(locale, "counts.brands", { count: logosCount })}
                         </Badge>
+                        <LanguageToggle locale={locale} />
                         <div className="hidden sm:flex">
                             <ThemeToggle />
                         </div>
                     </div>
                 </div>
                 <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
-                    Atlas automotriz
+                    {translate(locale, "hero.title")}
                 </h1>
                 <p className="max-w-2xl text-base text-foreground/70 sm:text-lg">
-                    Descubre marcas icónicas y raras con una experiencia limpia y directa.
+                    {translate(locale, "hero.subtitle")}
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <Button type="button" onClick={handleExploreClick}>
-                        Explorar colección
+                        {translate(locale, "hero.exploreCollection")}
                     </Button>
                     <Button
                         variant="outline"
                         asChild
                         className="border-border/60 text-foreground hover:bg-foreground/10 hover:text-foreground"
                     >
-                        <a href="/learn">Aprender por niveles</a>
+                        <a href="/learn">{translate(locale, "hero.learnByLevels")}</a>
                     </Button>
                 </div>
                 <div className="sm:hidden">

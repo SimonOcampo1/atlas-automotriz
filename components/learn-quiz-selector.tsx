@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import type { Logo } from "@/lib/logos";
+import { translate, type Locale } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,7 @@ type Props = {
   logos: Logo[];
   modelBrands: ModelBrand[];
   logoByBrandKey: Record<string, Logo | undefined>;
+  locale: Locale;
 };
 
 type Mode = "brand" | "model" | null;
@@ -31,7 +33,7 @@ function getImageSrc(logo: Logo | undefined) {
   return logo.images.thumb;
 }
 
-export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props) {
+export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey, locale }: Props) {
   const [mode, setMode] = React.useState<Mode>(null);
   
   // CORRECCIÓN 2: Referencia para el scroll automático
@@ -58,11 +60,11 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Quiz clásico
+                {translate(locale, "learn.classicQuiz")}
               </p>
-              <h3 className="text-xl font-semibold">Quiz de logos</h3>
+              <h3 className="text-xl font-semibold">{translate(locale, "learn.logoQuiz")}</h3>
               <p className="text-sm text-muted-foreground">
-                8 niveles con dificultad progresiva.
+                {translate(locale, "learn.logoQuizDesc")}
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/30">
@@ -81,11 +83,11 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Nuevo
+                {translate(locale, "learn.new")}
               </p>
-              <h3 className="text-xl font-semibold">Quiz de modelos</h3>
+              <h3 className="text-xl font-semibold">{translate(locale, "learn.modelQuiz")}</h3>
               <p className="text-sm text-muted-foreground">
-                Selecciona una marca y responde por modelos.
+                {translate(locale, "learn.modelQuizDesc")}
               </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/30">
@@ -105,7 +107,7 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
               : "max-h-0 opacity-0 translate-y-2 pointer-events-none"
           }`}
         >
-          <LogoTiers logos={logos} />
+          <LogoTiers logos={logos} locale={locale} />
         </div>
 
         {/* Sección de Modelos */}
@@ -118,8 +120,12 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
         >
           <div className="flex flex-col gap-4 pt-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">Marcas con modelos</h2>
-              <Badge variant="secondary">{modelBrands.length} marcas</Badge>
+              <h2 className="text-2xl font-semibold">
+                {translate(locale, "learn.brandsWithModels")}
+              </h2>
+              <Badge variant="secondary">
+                {translate(locale, "counts.brands", { count: modelBrands.length })}
+              </Badge>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {modelBrands.map((brand) => {
@@ -134,18 +140,22 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
                             {imageSrc ? (
                               <img
                                 src={imageSrc}
-                                alt={`Logo de ${brand.name}`}
+                                alt={translate(locale, "dialog.logoOf", { name: brand.name })}
                                 className="max-h-full w-auto object-contain"
                                 loading="lazy"
                               />
                             ) : (
-                              <span className="text-xs text-muted-foreground">Logo</span>
+                              <span className="text-xs text-muted-foreground">
+                                {translate(locale, "placeholder.logo")}
+                              </span>
                             )}
                           </div>
                           <div>
                             <p className="text-lg font-semibold text-foreground">{brand.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {brand.modelCount} modelos
+                              {translate(locale, "counts.models", {
+                                count: brand.modelCount,
+                              })}
                             </p>
                           </div>
                         </div>
@@ -154,7 +164,7 @@ export function LearnQuizSelector({ logos, modelBrands, logoByBrandKey }: Props)
                             size="icon"
                             variant="outline"
                             className="h-9 w-9 rounded-full border-border/60 bg-background/80 hover:bg-foreground/10"
-                            aria-label="Ver marca"
+                            aria-label={translate(locale, "button.viewBrand")}
                           >
                             <ArrowRight className="h-4 w-4" />
                           </Button>

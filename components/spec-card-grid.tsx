@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { translate, type Locale } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,15 +25,16 @@ export type SpecCardItem = {
 type Props = {
   items: SpecCardItem[];
   emptyLabel?: string;
+  locale: Locale;
 };
 
-export function SpecCardGrid({ items, emptyLabel }: Props) {
+export function SpecCardGrid({ items, emptyLabel, locale }: Props) {
   const [selected, setSelected] = React.useState<SpecCardItem | null>(null);
 
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-10 text-center text-sm text-muted-foreground">
-        {emptyLabel ?? "No hay elementos para mostrar."}
+        {emptyLabel ?? translate(locale, "empty.noItems")}
       </div>
     );
   }
@@ -59,11 +61,11 @@ export function SpecCardGrid({ items, emptyLabel }: Props) {
                     loading="lazy"
                   />
                 ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Imagen no disponible
-                  </span>
-                )}
-              </button>
+                    <span className="text-xs text-muted-foreground">
+                      {translate(locale, "image.unavailable")}
+                    </span>
+                  )}
+                </button>
               <div className="flex flex-1 flex-col gap-2 border-b border-border/60 px-3 py-4">
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-foreground">{item.title}</p>
@@ -87,7 +89,7 @@ export function SpecCardGrid({ items, emptyLabel }: Props) {
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>{selected?.title ?? "Imagen"}</DialogTitle>
+            <DialogTitle>{selected?.title ?? translate(locale, "dialog.imageTitle")}</DialogTitle>
           </DialogHeader>
           {selected?.imageSrc ? (
             <div className="flex flex-col items-center gap-4">
@@ -100,7 +102,7 @@ export function SpecCardGrid({ items, emptyLabel }: Props) {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Vista ampliada de la imagen seleccionada.
+                {translate(locale, "dialog.selectedImageView")}
               </p>
             </div>
           ) : null}

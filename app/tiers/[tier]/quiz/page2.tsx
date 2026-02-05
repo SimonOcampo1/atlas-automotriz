@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { QuizClient } from "@/components/quiz-client";
+import { getServerLocale } from "@/lib/i18n-server";
 import { getAllLogos } from "@/lib/logos";
 import {
   getTierMeta,
@@ -13,6 +14,7 @@ export default async function QuizPage({
 }: {
   params: Promise<{ tier: string }>;
 }) {
+  const locale = await getServerLocale();
   const { tier } = await params;
   const tierIds = LOGO_TIERS.map((item) => item.id);
 
@@ -32,6 +34,7 @@ export default async function QuizPage({
       tierId={tierId}
       meta={meta}
       logos={tierLogos}
+      locale={locale}
     />
   );
 }

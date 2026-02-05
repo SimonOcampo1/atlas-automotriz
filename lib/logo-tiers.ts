@@ -20,6 +20,8 @@ export type LogoTier = {
   tone: string;
 };
 
+export type TierMeta = LogoTier;
+
 export const LOGO_TIERS: LogoTier[] = [
   {
     id: "nivel-1",

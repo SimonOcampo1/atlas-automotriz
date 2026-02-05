@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { translate, type Locale } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
 type Props = {
   brandKey: string;
   brandName: string;
+  locale: Locale;
 };
 
 type BestRun = {
@@ -35,7 +37,7 @@ function storageKey(brandKey: string) {
   return `model-quiz-best-${brandKey}`;
 }
 
-export function ModelQuizLauncher({ brandKey, brandName }: Props) {
+export function ModelQuizLauncher({ brandKey, brandName, locale }: Props) {
   const [open, setOpen] = React.useState(false);
   const [bestRun, setBestRun] = React.useState<BestRun | null>(null);
 
@@ -61,28 +63,34 @@ export function ModelQuizLauncher({ brandKey, brandName }: Props) {
         className="bg-white text-black hover:bg-white/90"
         onClick={() => setOpen(true)}
       >
-        Empezar quiz
+        {translate(locale, "quiz.start")}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] px-6 sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Quiz de modelos · {brandName}</DialogTitle>
+            <DialogTitle>
+              {translate(locale, "quiz.modelQuizTitle", { brand: brandName })}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Solo opción múltiple con 4 respuestas.
+              {translate(locale, "quiz.onlyMultiple")}
             </p>
             <div className="flex items-center justify-between rounded-lg border border-border/60 bg-background/80 p-3 text-sm">
-              <span className="text-muted-foreground">Mejor registro</span>
+              <span className="text-muted-foreground">
+                {translate(locale, "quiz.bestRun")}
+              </span>
               <Badge variant="outline">
                 {bestRun
                   ? `${bestRun.accuracy}% · ${bestRun.completed}/${bestRun.total} · ${formatTime(bestRun.timeMs)}`
-                  : "Sin registros"}
+                  : translate(locale, "quiz.noRecords")}
               </Badge>
             </div>
             <Button asChild className="bg-white text-black hover:bg-white/90">
-              <Link href={`/model-quiz/${brandKey}/play`}>Empezar quiz</Link>
+              <Link href={`/model-quiz/${brandKey}/play`}>
+                {translate(locale, "quiz.start")}
+              </Link>
             </Button>
           </div>
         </DialogContent>

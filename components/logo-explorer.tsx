@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import type { Logo, LogoSize } from "@/lib/logos";
+import { translate, type Locale } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,8 +26,9 @@ import {
 } from "@/components/ui/select";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import {
-  COUNTRIES,
-  COUNTRY_BY_CODE,
+  getCountries,
+  getCountryByCode,
+  getUnknownCountry,
   UNKNOWN_COUNTRY,
   getFlagSrc,
 } from "@/lib/country-data";
@@ -40,6 +42,7 @@ type GroupMode = "letters" | "countries";
 type Props = {
   logos: Logo[];
   brandModelLinks?: Record<string, string>;
+  locale: Locale;
 };
 
 // CORRECCIÓN: Usamos ruta directa (sin /api/)
@@ -57,7 +60,7 @@ function getSizeClasses(scale: number) {
   return { container: "h-32", image: "max-h-16" };
 }
 
-export function LogoExplorer({ logos, brandModelLinks }: Props) {
+export function LogoExplorer({ logos, brandModelLinks, locale }: Props) {
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<SortOption>("name-asc");
   const [size, setSize] = React.useState<LogoSize>("optimized");
@@ -67,6 +70,10 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
   const [effectiveColumns, setEffectiveColumns] = React.useState<number>(density);
   const [groupMode, setGroupMode] = React.useState<GroupMode>("letters");
   const [countryFilter, setCountryFilter] = React.useState("all");
+  const unknownCountry = React.useMemo(
+    () => getUnknownCountry(locale),
+    [locale]
+  );
 
   React.useEffect(() => {
     function handleResize() {
@@ -127,7 +134,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
     return filtered.filter((logo) => {
       const mapped = BRAND_COUNTRY_BY_SLUG[logo.slug];
       const code = mapped && mapped.trim() ? mapped : UNKNOWN_COUNTRY.code;
-      const info = COUNTRY_BY_CODE[code] ?? UNKNOWN_COUNTRY;
+      const info = getCountryByCode(locale)[code] ?? unknownCountry;
 
       if (countryFilter === "unknown") {
         return info.code === UNKNOWN_COUNTRY.code;
@@ -140,7 +147,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
 
       return info.code === countryFilter;
     });
-  }, [filtered, countryFilter]);
+  }, [filtered, countryFilter, locale, unknownCountry]);
 
   const countryOptions = React.useMemo(() => {
     const usedCodes = new Set(
@@ -150,9 +157,10 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
         .map((code) => code.toUpperCase())
     );
 
+    const countries = getCountries(locale);
     const filteredCountries = usedCodes.size
-      ? COUNTRIES.filter((country) => usedCodes.has(country.code.toUpperCase()))
-      : COUNTRIES;
+      ? countries.filter((country) => usedCodes.has(country.code.toUpperCase()))
+      : countries;
 
     return [...filteredCountries].sort((a, b) => a.name.localeCompare(b.name));
   }, []);
@@ -164,17 +172,17 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
 
   const countryFilterLabel = React.useMemo(() => {
     if (countryFilter === "all") {
-      return "Todos los países";
+      return translate(locale, "filter.allCountries");
     }
     if (countryFilter === "unknown") {
-      return "Sin país";
+      return translate(locale, "filter.noCountry");
     }
     if (countryFilter.startsWith("region:")) {
       return countryFilter.replace("region:", "");
     }
-    const info = COUNTRY_BY_CODE[countryFilter];
+    const info = getCountryByCode(locale)[countryFilter];
     return info ? info.name : countryFilter;
-  }, [countryFilter]);
+  }, [countryFilter, locale]);
 
   const countryFilterFlag = React.useMemo(() => {
     if (
@@ -184,8 +192,8 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
     ) {
       return null;
     }
-    return COUNTRY_BY_CODE[countryFilter] ? countryFilter : null;
-  }, [countryFilter]);
+    return getCountryByCode(locale)[countryFilter] ? countryFilter : null;
+  }, [countryFilter, locale]);
 
   const groupedLogos = React.useMemo(() => {
     const groups = new Map<string, Logo[]>();
@@ -227,7 +235,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
     }
 
     const items = Array.from(groups.entries()).map(([code, logos]) => {
-      const country = COUNTRY_BY_CODE[code] ?? UNKNOWN_COUNTRY;
+      const country = getCountryByCode(locale)[code] ?? unknownCountry;
       return {
         key: code,
         title: country.name,
@@ -240,7 +248,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
       items.reverse();
     }
     return items;
-  }, [filteredByCountry, groupMode, sort]);
+  }, [filteredByCountry, groupMode, sort, locale, unknownCountry]);
 
 
 
@@ -249,13 +257,16 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-semibold">Explorar marcas</h2>
+            <h2 className="text-2xl font-semibold">{translate(locale, "brands.explore")}</h2>
             <p className="text-sm text-muted-foreground">
-              {filtered.length} de {logos.length} marcas
+              {translate(locale, "brands.countOf", {
+                current: filtered.length,
+                total: logos.length,
+              })}
             </p>
           </div>
           <Badge variant="secondary" className="px-3 py-1">
-            Colección completa
+            {translate(locale, "brands.fullCollection")}
           </Badge>
         </div>
         <div className="flex flex-col gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center">
@@ -264,7 +275,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar por nombre o slug"
+                placeholder={translate(locale, "search.nameOrSlug")}
                 className="w-full sm:w-55"
               />
               <button
@@ -277,13 +288,13 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/60 bg-background/80 text-foreground transition hover:bg-foreground/10"
                 aria-label={
                   sort === "name-asc"
-                    ? "Orden ascendente (A-Z)"
-                    : "Orden descendente (Z-A)"
+                    ? translate(locale, "sort.asc")
+                    : translate(locale, "sort.desc")
                 }
                 title={
                   sort === "name-asc"
-                    ? "Orden ascendente (A-Z)"
-                    : "Orden descendente (Z-A)"
+                    ? translate(locale, "sort.asc")
+                    : translate(locale, "sort.desc")
                 }
               >
                 {sort === "name-asc" ? (
@@ -296,12 +307,12 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
 
             <Select value={size} onValueChange={(value) => setSize(value as LogoSize)}>
               <SelectTrigger className="hidden w-full sm:inline-flex sm:w-45">
-                <SelectValue placeholder="Resolución" />
+                <SelectValue placeholder={translate(locale, "filter.resolution")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="thumb">Mini</SelectItem>
-                <SelectItem value="optimized">Optimizado</SelectItem>
-                <SelectItem value="original">Original</SelectItem>
+                <SelectItem value="thumb">{translate(locale, "size.mini")}</SelectItem>
+                <SelectItem value="optimized">{translate(locale, "size.optimized")}</SelectItem>
+                <SelectItem value="original">{translate(locale, "size.original")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -309,12 +320,12 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
           <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:gap-3">
             <Select value={size} onValueChange={(value) => setSize(value as LogoSize)}>
               <SelectTrigger className="w-full sm:hidden">
-                <SelectValue placeholder="Resolución" />
+                <SelectValue placeholder={translate(locale, "filter.resolution")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="thumb">Mini</SelectItem>
-                <SelectItem value="optimized">Optimizado</SelectItem>
-                <SelectItem value="original">Original</SelectItem>
+                <SelectItem value="thumb">{translate(locale, "size.mini")}</SelectItem>
+                <SelectItem value="optimized">{translate(locale, "size.optimized")}</SelectItem>
+                <SelectItem value="original">{translate(locale, "size.original")}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -322,12 +333,12 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
               onValueChange={(value) => setVisualSize(value as VisualSizeOption)}
             >
               <SelectTrigger className="w-full sm:w-45">
-                <SelectValue placeholder="Tamaño visual" />
+                <SelectValue placeholder={translate(locale, "filter.visualSize")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small">Pequeño</SelectItem>
-                <SelectItem value="medium">Mediano</SelectItem>
-                <SelectItem value="large">Grande</SelectItem>
+                <SelectItem value="small">{translate(locale, "size.small")}</SelectItem>
+                <SelectItem value="medium">{translate(locale, "size.medium")}</SelectItem>
+                <SelectItem value="large">{translate(locale, "size.large")}</SelectItem>
               </SelectContent>
             </Select>
             <Select
@@ -335,23 +346,23 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
               onValueChange={(value) => setDensity(Number(value) as DensityOption)}
             >
               <SelectTrigger className="hidden w-full sm:inline-flex sm:w-37.5">
-                <SelectValue placeholder="Columnas" />
+                <SelectValue placeholder={translate(locale, "filter.columns")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2">2 por fila</SelectItem>
-                <SelectItem value="3">3 por fila</SelectItem>
-                <SelectItem value="4">4 por fila</SelectItem>
-                <SelectItem value="5">5 por fila</SelectItem>
-                <SelectItem value="6">6 por fila</SelectItem>
+                <SelectItem value="2">{translate(locale, "columns.count", { count: 2 })}</SelectItem>
+                <SelectItem value="3">{translate(locale, "columns.count", { count: 3 })}</SelectItem>
+                <SelectItem value="4">{translate(locale, "columns.count", { count: 4 })}</SelectItem>
+                <SelectItem value="5">{translate(locale, "columns.count", { count: 5 })}</SelectItem>
+                <SelectItem value="6">{translate(locale, "columns.count", { count: 6 })}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={groupMode} onValueChange={(value) => setGroupMode(value as GroupMode)}>
               <SelectTrigger className="w-full sm:w-47.5">
-                <SelectValue placeholder="Agrupar" />
+                <SelectValue placeholder={translate(locale, "filter.group")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="letters">Agrupar por letras</SelectItem>
-                <SelectItem value="countries">Agrupar por países</SelectItem>
+                <SelectItem value="letters">{translate(locale, "filter.groupLetters")}</SelectItem>
+                <SelectItem value="countries">{translate(locale, "filter.groupCountries")}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -381,18 +392,18 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                 sideOffset={6}
                 className="max-h-72 data-[state=open]:animate-none data-[state=closed]:animate-none"
               >
-                <SelectItem value="all">Todos los países</SelectItem>
-                <SelectItem value="unknown">Sin país</SelectItem>
+                <SelectItem value="all">{translate(locale, "filter.allCountries")}</SelectItem>
+                <SelectItem value="unknown">{translate(locale, "filter.noCountry")}</SelectItem>
                 <SelectSeparator />
                 <SelectGroup>
-                  <SelectLabel>Regiones</SelectLabel>
+                  <SelectLabel>{translate(locale, "filter.regions")}</SelectLabel>
                   {regionOptions.map((region) => (
                     <SelectItem key={region} value={`region:${region}`}>
                       {region}
                     </SelectItem>
                   ))}
                   <SelectSeparator />
-                  <SelectLabel>Países</SelectLabel>
+                  <SelectLabel>{translate(locale, "filter.countries")}</SelectLabel>
                   {countryOptions.map((country) => (
                     <SelectItem key={country.code} value={country.code}>
                       <span className="flex items-center gap-2">
@@ -455,7 +466,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                         >
                           <img
                             src={getImageSrc(logo, size)}
-                            alt={`Logo de ${logo.name}`}
+                            alt={translate(locale, "dialog.logoOf", { name: logo.name })}
                             className={`${classes.image} w-auto object-contain`}
                             loading="lazy"
                           />
@@ -471,7 +482,9 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                             variant="outline"
                             className="w-full border-border/60 text-foreground hover:bg-foreground/10 hover:text-foreground"
                           >
-                            <Link href={`/brands/${brandKey}`}>Ver Modelos</Link>
+                            <Link href={`/brands/${brandKey}`}>
+                              {translate(locale, "action.viewModels")}
+                            </Link>
                           </Button>
                         ) : null}
                       </CardContent>
@@ -504,7 +517,7 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                   >
                     <img
                       src={getImageSrc(logo, size)}
-                      alt={`Logo de ${logo.name}`}
+                      alt={translate(locale, "dialog.logoOf", { name: logo.name })}
                       className={`${classes.image} w-auto object-contain`}
                       loading="lazy"
                     />
@@ -520,7 +533,9 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
                       variant="outline"
                       className="w-full border-border/60 text-foreground hover:bg-foreground/10 hover:text-foreground"
                     >
-                      <Link href={`/brands/${brandKey}`}>Ver Modelos</Link>
+                      <Link href={`/brands/${brandKey}`}>
+                        {translate(locale, "action.viewModels")}
+                      </Link>
                     </Button>
                   ) : null}
                 </CardContent>
@@ -534,7 +549,9 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
         <DialogContent className="w-[calc(100%-2rem)] max-w-[calc(100%-2rem)] sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {selected ? `Logo de ${selected.name}` : ""}
+              {selected
+                ? translate(locale, "dialog.logoOf", { name: selected.name })
+                : ""}
             </DialogTitle>
           </DialogHeader>
           {selected && (
@@ -543,12 +560,12 @@ export function LogoExplorer({ logos, brandModelLinks }: Props) {
               <div className="flex w-full items-center justify-center rounded-2xl bg-white p-6">
                 <img
                   src={getImageSrc(selected, "original")}
-                  alt={`Logo de ${selected.name}`}
+                  alt={translate(locale, "dialog.logoOf", { name: selected.name })}
                   className="max-h-[70vh] w-auto object-contain"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Vista ampliada en tamaño original.
+                {translate(locale, "dialog.originalSizeView")}
               </p>
             </div>
           )}

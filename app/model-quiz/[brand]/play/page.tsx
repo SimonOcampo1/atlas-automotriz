@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ModelQuizClient } from "@/components/model-quiz-client";
+import { getServerLocale } from "@/lib/i18n-server";
 import {
   getUltimateSpecsBrandByKey,
   getUltimateSpecsImageSrc,
@@ -10,6 +11,7 @@ export default async function ModelQuizPlayPage({
 }: {
   params: Promise<{ brand: string }>;
 }) {
+  const locale = await getServerLocale();
   const { brand } = await params;
   const brandData = await getUltimateSpecsBrandByKey(brand);
 
@@ -39,6 +41,7 @@ export default async function ModelQuizPlayPage({
       brandName={brandData.name}
       brandKey={brandData.key}
       models={models}
+      locale={locale}
       initialOpen={false}
       autoStart
     />

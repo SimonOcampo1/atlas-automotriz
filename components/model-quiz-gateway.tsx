@@ -4,6 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { SpecCardGrid, type SpecCardItem } from "@/components/spec-card-grid";
 import { ModelQuizClient, type ModelQuizItem } from "@/components/model-quiz-client";
+import { translate, type Locale } from "@/lib/i18n";
 
 type Props = {
   items: SpecCardItem[];
@@ -12,6 +13,7 @@ type Props = {
   brandKey: string;
   onStart?: () => void;
   hideStart?: boolean;
+  locale: Locale;
 };
 
 export function ModelQuizGateway({
@@ -21,6 +23,7 @@ export function ModelQuizGateway({
   brandKey,
   onStart,
   hideStart,
+  locale,
 }: Props) {
   const [started, setStarted] = React.useState(false);
 
@@ -42,7 +45,11 @@ export function ModelQuizGateway({
 
   return (
     <div id="start-quiz" className="flex flex-col gap-8">
-      <SpecCardGrid items={items} emptyLabel="No hay modelos para mostrar." />
+      <SpecCardGrid
+        items={items}
+        emptyLabel={translate(locale, "empty.noModelsToShow")}
+        locale={locale}
+      />
 
       {!started && !hideStart ? (
         <div className="flex justify-center">
@@ -50,11 +57,16 @@ export function ModelQuizGateway({
             onClick={() => setStarted(true)}
             className="bg-white text-black hover:bg-white/90"
           >
-            Empezar quiz
+            {translate(locale, "quiz.start")}
           </Button>
         </div>
       ) : (
-        <ModelQuizClient brandName={brandName} brandKey={brandKey} models={models} />
+        <ModelQuizClient
+          brandName={brandName}
+          brandKey={brandKey}
+          models={models}
+          locale={locale}
+        />
       )}
     </div>
   );

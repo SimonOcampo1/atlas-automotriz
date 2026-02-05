@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { translate, type Locale } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,10 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
 import type { Logo } from "@/lib/logos";
 import type { TierMeta } from "@/lib/logo-tiers";
 import { BRAND_COUNTRY_BY_SLUG } from "@/lib/brand-country-map";
-import { COUNTRY_BY_CODE, UNKNOWN_COUNTRY, getFlagSrc } from "@/lib/country-data";
+import { UNKNOWN_COUNTRY, getCountryByCode, getFlagSrc, getUnknownCountry } from "@/lib/country-data";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Trophy } from "lucide-react";
 
 type Mode = "multiple" | "typed" | "country";
@@ -40,6 +42,7 @@ type QuizClientProps = {
   meta: TierMeta;
   logos: Logo[];
   initialMode?: Mode | null;
+  locale: Locale;
 };
 
 // Mantenemos la ruta directa
@@ -67,7 +70,7 @@ function storageKey(tierId: string, mode: Mode) {
   return `quiz-best-${tierId}-${mode}`;
 }
 
-export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClientProps) {
+export function QuizClient({ tier, tierId, meta, logos, initialMode, locale }: QuizClientProps) {
   const router = useRouter();
   const [selectDialogOpen, setSelectDialogOpen] = React.useState(!initialMode);
   const [resultDialogOpen, setResultDialogOpen] = React.useState(false);
@@ -87,6 +90,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
     country: null,
   });
   const hasAutoStarted = React.useRef(false);
+  const unknownCountry = React.useMemo(() => getUnknownCountry(locale), [locale]);
 
   const countryCodes = React.useMemo(() => {
     const set = new Set<string>();
@@ -149,11 +153,12 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
       return;
     }
     const correctCode = BRAND_COUNTRY_BY_SLUG[current.slug] ?? UNKNOWN_COUNTRY.code;
-    const poolSource = countryCodes.length > 3 ? countryCodes : Object.keys(COUNTRY_BY_CODE);
+    const countryByCode = getCountryByCode(locale);
+    const poolSource = countryCodes.length > 3 ? countryCodes : Object.keys(countryByCode);
     const pool = poolSource.filter((code) => code !== correctCode);
     const shuffled = shuffle(pool).slice(0, 3);
     const choices = shuffle([correctCode, ...shuffled]).map((code) => {
-      const country = COUNTRY_BY_CODE[code] ?? UNKNOWN_COUNTRY;
+      const country = countryByCode[code] ?? unknownCountry;
       return {
         value: code,
         label: country.name,
@@ -162,7 +167,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
     });
     setOptions(choices);
     setSelectedOption(null);
-  }, [index, questions, logos, mode, countryCodes]);
+  }, [index, questions, logos, mode, countryCodes, locale, unknownCountry]);
 
   const current = questions[index];
   const total = questions.length;
@@ -252,7 +257,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
   const bestLabel = (modeKey: Mode) => {
     const best = bestRuns[modeKey];
     if (!best) {
-      return "Sin registros";
+      return translate(locale, "quiz.noRecords");
     }
     return `${best.accuracy}% · ${best.completed}/${best.total} · ${formatTime(best.timeMs)}`;
   };
@@ -282,21 +287,29 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
             >
               <Link href={`/tiers/${tier}`} className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Volver al nivel
+                {translate(locale, "tier.backToLevel")}
               </Link>
             </Button>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <LanguageToggle locale={locale} />
+              <ThemeToggle />
+            </div>
           </div>
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted/40 text-sm font-semibold text-foreground">
               {meta.level}
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Quiz · {meta.label}
+              {translate(locale, "quiz.brandQuizTitle", { label: meta.label })}
             </h1>
             {questions.length > 0 && (
               <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
-                <span>Pregunta {index + 1} de {total}</span>
+                <span>
+                  {translate(locale, "quiz.questionCount", {
+                    current: index + 1,
+                    total,
+                  })}
+                </span>
                 <div className="flex items-center gap-4 rounded-full border border-border/60 bg-background/70 px-4 py-2 text-base font-semibold text-foreground sm:text-lg">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -305,10 +318,14 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                   <div className="h-4 w-px bg-border/60" />
                   <div className="flex items-center gap-2">
                     <span>{completionRate}%</span>
-                    <span className="text-xs font-medium text-muted-foreground sm:text-sm">completado</span>
+                  <span className="text-xs font-medium text-muted-foreground sm:text-sm">
+                    {translate(locale, "quiz.completedLabel")}
+                  </span>
                   </div>
                 </div>
-                {mode === "typed" && <span>Letras: {lettersCount}</span>}
+                {mode === "typed" && (
+                  <span>{translate(locale, "quiz.lettersCount", { count: lettersCount })}</span>
+                )}
               </div>
             )}
           </div>
@@ -320,11 +337,11 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
           <div className="flex flex-col items-center gap-4">
             {/* RESTAURADO: Fondo blanco y padding para LOGOS */}
             <div className="flex w-full items-center justify-center overflow-hidden rounded-2xl bg-white p-6">
-              <img
-                src={getImageSrc(current)}
-                alt={`Logo de ${current.name}`}
-                className={`max-h-[40vh] w-auto object-contain ${
-                  mode === "country"
+                <img
+                  src={getImageSrc(current)}
+                  alt={translate(locale, "dialog.logoOf", { name: current.name })}
+                  className={`max-h-[40vh] w-auto object-contain ${
+                    mode === "country"
                     ? "blur-0"
                     : isRevealed
                     ? "blur-0 transition-[filter] duration-500"
@@ -385,12 +402,12 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                       }`}
                     >
                       {option.code && option.code !== UNKNOWN_COUNTRY.code ? (
-                        <img
-                          src={getFlagSrc(option.code)}
-                          alt={`Bandera de ${option.label}`}
-                          className="h-6 w-9 rounded-sm border border-border/60 object-cover"
-                          loading="lazy"
-                        />
+                      <img
+                        src={getFlagSrc(option.code)}
+                        alt={translate(locale, "quiz.countryFlagAlt", { name: option.label })}
+                        className="h-6 w-9 rounded-sm border border-border/60 object-cover"
+                        loading="lazy"
+                      />
                       ) : (
                         <div className="h-6 w-9 rounded-sm border border-border/60 bg-muted/60" />
                       )}
@@ -404,7 +421,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                 <Input
                   value={typedValue}
                   onChange={(event) => setTypedValue(event.target.value)}
-                  placeholder="Escribe la marca"
+                  placeholder={translate(locale, "quiz.typeBrandPlaceholder")}
                   disabled={answers[index] !== undefined}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" && answers[index] === undefined) {
@@ -413,11 +430,11 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
                   }}
                 />
                 <Button onClick={handleTypedSubmit} disabled={answers[index] !== undefined}>
-                  Confirmar
+                  {translate(locale, "quiz.confirm")}
                 </Button>
                 {answers[index] === false && (
                   <p className="text-xs text-rose-500">
-                    Incorrecto. La respuesta era {current.name}.
+                    {translate(locale, "quiz.incorrectAnswer", { name: current.name })}
                   </p>
                 )}
               </div>
@@ -432,7 +449,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
               className="flex items-center gap-2"
             >
               <ChevronLeft className="h-4 w-4" />
-              Anterior
+              {translate(locale, "quiz.previous")}
             </Button>
 
             <Button
@@ -441,7 +458,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
             >
               <Trophy className="h-4 w-4" />
-              Finalizar
+              {translate(locale, "quiz.finish")}
             </Button>
 
             <Button
@@ -450,7 +467,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
               disabled={index === total - 1}
               className="flex items-center gap-2"
             >
-              Siguiente
+              {translate(locale, "quiz.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -468,46 +485,56 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
           }}
         >
           <DialogHeader>
-            <DialogTitle>Selecciona el modo de quiz</DialogTitle>
+            <DialogTitle>{translate(locale, "quiz.selectMode")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/80 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Multiple choice</p>
+                  <p className="text-sm font-medium">
+                    {translate(locale, "quiz.multipleChoice")}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    4 opciones por logo
+                    {translate(locale, "quiz.optionsPerLogo")}
                   </p>
                 </div>
                 <Badge variant="outline">{bestLabel("multiple")}</Badge>
               </div>
-              <Button onClick={() => startQuiz("multiple")}>Empezar</Button>
+              <Button onClick={() => startQuiz("multiple")}>
+                {translate(locale, "quiz.startShort")}
+              </Button>
             </div>
 
             <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/80 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Tipeado</p>
+                  <p className="text-sm font-medium">{translate(locale, "quiz.typed")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Escribe la marca correcta
+                    {translate(locale, "quiz.typeCorrectBrand")}
                   </p>
                 </div>
                 <Badge variant="outline">{bestLabel("typed")}</Badge>
               </div>
-              <Button onClick={() => startQuiz("typed")}>Empezar</Button>
+              <Button onClick={() => startQuiz("typed")}>
+                {translate(locale, "quiz.startShort")}
+              </Button>
             </div>
 
             <div className="flex flex-col gap-3 rounded-lg border border-border/60 bg-background/80 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">País de origen</p>
+                  <p className="text-sm font-medium">
+                    {translate(locale, "quiz.countryOrigin")}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    4 opciones con bandera
+                    {translate(locale, "quiz.optionsWithFlag")}
                   </p>
                 </div>
                 <Badge variant="outline">{bestLabel("country")}</Badge>
               </div>
-              <Button onClick={() => startQuiz("country")}>Empezar</Button>
+              <Button onClick={() => startQuiz("country")}>
+                {translate(locale, "quiz.startShort")}
+              </Button>
             </div>
           </div>
           <Button
@@ -515,7 +542,7 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
             onClick={() => router.push(`/tiers/${tier}`)}
             className="mt-2"
           >
-            Cancelar
+            {translate(locale, "quiz.cancel")}
           </Button>
         </DialogContent>
       </Dialog>
@@ -523,35 +550,39 @@ export function QuizClient({ tier, tierId, meta, logos, initialMode }: QuizClien
       <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
         <DialogContent className="mx-4 w-[calc(100%-2rem)] max-w-md px-6 sm:mx-0">
           <DialogHeader>
-            <DialogTitle>Resultado del quiz</DialogTitle>
+            <DialogTitle>{translate(locale, "quiz.resultTitle")}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <p className="text-sm">
-              Aciertos: <strong>{correctCount}</strong> de {Object.keys(answers).length} respondidas
+              {translate(locale, "quiz.correctCount", {
+                correct: correctCount,
+                answered: Object.keys(answers).length,
+              })}
             </p>
             <p className="text-sm">
-              Precisión: <strong>
-                {Object.keys(answers).length > 0
-                  ? Math.round((correctCount / Object.keys(answers).length) * 100)
-                  : 0}%
-              </strong>
+              {translate(locale, "quiz.accuracy", {
+                value:
+                  Object.keys(answers).length > 0
+                    ? Math.round((correctCount / Object.keys(answers).length) * 100)
+                    : 0,
+              })}
             </p>
             <p className="text-sm">
-              Completitud: <strong>{completionRate}%</strong>
+              {translate(locale, "quiz.completion", { value: completionRate })}
             </p>
             <p className="text-sm">
-              Tiempo: <strong>{formatTime(elapsedMs)}</strong>
+              {translate(locale, "quiz.time", { value: formatTime(elapsedMs) })}
             </p>
             <div className="flex flex-col gap-2">
               <Button onClick={() => {
                 setResultDialogOpen(false);
                 setSelectDialogOpen(true);
               }}>
-                Reintentar
+                {translate(locale, "quiz.retry")}
               </Button>
               <Button variant="outline" asChild>
                 <Link href={`/tiers/${tier}`}>
-                  Volver al nivel
+                  {translate(locale, "quiz.backToLevel")}
                 </Link>
               </Button>
             </div>
